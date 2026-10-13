@@ -307,6 +307,8 @@ def test_validation_code_translation_is_path_scoped() -> None:
     assert deployment.json()["error"]["code"] == "invalid_request"
     assert setup.status_code == 422
     assert setup.json()["error"]["code"] == "validation_error"
+    assert "correlation_id" not in deployment.json()["error"]
+    assert deployment.json()["correlation_id"]
 
 
 def test_r1_setups_keep_the_invalid_null_contract_code() -> None:

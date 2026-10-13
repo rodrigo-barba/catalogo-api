@@ -100,6 +100,7 @@ def test_replay_and_validation_use_the_public_response_contract() -> None:
     assert error["retryable"] is False
     assert error["details"]
     assert invalid.json()["correlation_id"]
+    assert "correlation_id" not in invalid.json()["error"]
 
 
 def test_existing_setup_rejects_all_conflict_dimensions_without_mutation() -> None:

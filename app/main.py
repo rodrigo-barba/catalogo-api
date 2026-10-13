@@ -4,6 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.api.devhub_accesses import R2_DEVHUB_ACCESSES_PATH, error_response as r2_error_response
+from app.api.devhub_accesses import r2_validation_error
+from app.api.devhub_accesses import router as devhub_accesses_router
 from app.api.deployments import r3_validation_error
 from app.api.deployments import router as deployments_router
 from app.api.setups import router as setups_router, validation_details
@@ -13,11 +16,15 @@ R3_DEPLOYMENTS_PATH = "/api/v1/deployments"
 app = FastAPI()
 app.include_router(setups_router)
 app.include_router(deployments_router)
+app.include_router(devhub_accesses_router)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request: Request, error: RequestValidationError) -> JSONResponse:
     errors = error.errors()
+    if request.url.path == R2_DEVHUB_ACCESSES_PATH:
+        status_code, code = r2_validation_error(errors)
+        return r2_error_response(code, status_code, details=validation_details(errors))
     if request.url.path == R3_DEPLOYMENTS_PATH:
         status_code, code = r3_validation_error(errors)
         return JSONResponse(
