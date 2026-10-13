@@ -347,3 +347,64 @@ def test_concurrent_deployments_share_one_component_version_per_tag(mariadb_data
         assert [version.tag for version in versions] == ["2.4.1"]
     finally:
         engine.dispose()
+
+
+def test_concurrent_same_devhub_event_creates_one_access_and_replays(mariadb_database: URL) -> None:
+    from app.schemas.devhub_access import DevhubAccessRequest
+    from app.services.devhub_access_acceptance import accept_devhub_access
+    from tests.test_devhub_access_schemas import valid_payload
+
+    engine = create_engine(mariadb_database, isolation_level="READ COMMITTED")
+    request = DevhubAccessRequest.model_validate(valid_payload())
+
+    def submit() -> str:
+        with Session(engine) as session:
+            accepted = accept_devhub_access(session, request)
+            session.commit()
+            return "replay" if accepted.idempotent_replay else "created"
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(lambda _: submit(), range(2)))
+        with engine.connect() as connection:
+            event_count = connection.scalar(text("SELECT COUNT(*) FROM registro_integracion WHERE id_evento_origen = 'devhub-access-001'"))
+            access_count = connection.scalar(text("SELECT COUNT(*) FROM acceso_devhub"))
+            evidence_count = connection.scalar(text("SELECT COUNT(*) FROM acceso_devhub_evento"))
+            link_count = connection.scalar(text("SELECT COUNT(*) FROM acceso_devhub_usuario"))
+        assert sorted(outcomes) == ["created", "replay"]
+        assert (event_count, access_count, evidence_count, link_count) == (1, 1, 1, 1)
+    finally:
+        engine.dispose()
+
+
+def test_concurrent_devhub_events_share_personas_by_cuil(mariadb_database: URL) -> None:
+    from app.schemas.devhub_access import DevhubAccessRequest
+    from app.services.devhub_access_acceptance import accept_devhub_access
+    from tests.test_devhub_access_schemas import valid_payload
+
+    engine = create_engine(mariadb_database, isolation_level="READ COMMITTED")
+    first_payload = valid_payload()
+    first_payload["event_id"] = "devhub-person-race-001"
+    first_payload["requested_by"] = {"cuil": "20123456789"}
+    second_payload = valid_payload()
+    second_payload["event_id"] = "devhub-person-race-002"
+    second_payload["requested_by"] = {"cuil": "20123456789"}
+    requests = [DevhubAccessRequest.model_validate(first_payload), DevhubAccessRequest.model_validate(second_payload)]
+
+    def submit(request: DevhubAccessRequest) -> int:
+        with Session(engine) as session:
+            accepted = accept_devhub_access(session, request)
+            session.commit()
+            return accepted.devhub_access_id
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            access_ids = list(executor.map(submit, requests))
+        with engine.connect() as connection:
+            person_count = connection.scalar(text("SELECT COUNT(*) FROM persona WHERE cuil IN ('20123456789', '27345678901')"))
+            access_count = connection.scalar(text("SELECT COUNT(*) FROM acceso_devhub WHERE registro_id IN (SELECT id FROM registro_integracion WHERE id_evento_origen LIKE 'devhub-person-race-%')"))
+        assert len(set(access_ids)) == 2
+        assert person_count == 2
+        assert access_count == 2
+    finally:
+        engine.dispose()
