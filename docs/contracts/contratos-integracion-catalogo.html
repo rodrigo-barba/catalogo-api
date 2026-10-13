@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:,">
+  <title>Propuesta de contratos de integración · Catálogo</title>
+  <style>
+    :root {
+      --ink: #172d3d;
+      --muted: #566b79;
+      --line: #d8e1e6;
+      --paper: #fff;
+      --canvas: #f3f6f7;
+      --blue: #145a78;
+      --blue-dark: #103f57;
+      --blue-pale: #eaf3f6;
+      --teal: #16786f;
+      --amber: #865a0c;
+      --amber-pale: #fff5dc;
+      --red: #9a3d34;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--canvas);
+      scroll-behavior: smooth;
+      scroll-padding-top: 1.25rem;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; line-height: 1.65; font-size: 1rem; }
+    a { color: var(--blue); text-decoration-thickness: .08em; text-underline-offset: .18em; }
+    a:hover { color: var(--blue-dark); }
+    a:focus-visible, summary:focus-visible { outline: 3px solid #d28a19; outline-offset: 3px; border-radius: 3px; }
+    :target { scroll-margin-top: 1.5rem; }
+    .skip-link { position: fixed; z-index: 20; top: .5rem; left: .5rem; padding: .7rem 1rem; background: var(--ink); color: white; transform: translateY(-160%); }
+    .skip-link:focus { transform: translateY(0); color: white; }
+    .masthead { color: white; background: linear-gradient(115deg, #103f57, #176d79); padding: clamp(1.5rem, 5vw, 3.6rem) max(1rem, calc((100vw - 1280px) / 2)); }
+    .masthead-inner { max-width: 1280px; margin: 0 auto; }
+    .eyebrow { margin: 0 0 .65rem; color: #b9dce1; font-size: .78rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { max-width: 900px; margin: 0; font-size: clamp(1.9rem, 5vw, 3.35rem); line-height: 1.1; letter-spacing: -.035em; }
+    .lede { max-width: 760px; margin: 1.1rem 0 0; color: #e0eef1; font-size: clamp(1.05rem, 2vw, 1.2rem); }
+    .status-row { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; margin-top: 1.4rem; }
+    .status { display: inline-flex; align-items: center; min-height: 2.25rem; padding: .35rem .75rem; border: 1px solid #f1d48a; border-radius: 999px; background: #fff5dc; color: #66470b; font-size: .83rem; font-weight: 800; }
+    .meta { color: #d5e8eb; font-size: .9rem; }
+    .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: clamp(1.25rem, 3vw, 3rem); width: min(1280px, 100%); margin: 0 auto; padding: 1.25rem clamp(1rem, 3vw, 2rem) 5rem; align-items: start; }
+    .sidebar { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto; padding: 1rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--paper); }
+    .sidebar h2, .mobile-nav summary { margin: 0; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+    .sidebar nav { margin-top: .7rem; }
+    .toc { list-style: none; padding: 0; margin: 0; }
+    .toc li { margin: .14rem 0; }
+    .toc a { display: block; padding: .42rem .5rem; border-radius: .4rem; color: #304b5a; font-size: .88rem; line-height: 1.4; text-decoration: none; }
+    .toc a:hover, .toc a:focus-visible { background: var(--blue-pale); color: var(--blue-dark); }
+    .toc .sub a { padding-left: 1rem; font-size: .82rem; }
+    .mobile-nav { display: none; position: sticky; z-index: 10; top: 0; margin: 0 -1rem 1rem; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.97); }
+    .mobile-nav summary { display: flex; align-items: center; justify-content: space-between; min-height: 3.25rem; padding: .7rem 1rem; cursor: pointer; list-style: none; }
+    .mobile-nav summary::-webkit-details-marker { display: none; }
+    .mobile-nav summary::after { content: "＋"; color: var(--blue); font-size: 1.2rem; }
+    .mobile-nav[open] summary::after { content: "−"; }
+    .mobile-nav nav { max-height: min(65vh, 28rem); overflow: auto; padding: 0 1rem 1rem; }
+    main { min-width: 0; }
+    article { min-width: 0; }
+    .intro-card, section.card { margin-bottom: 1rem; padding: clamp(1rem, 3vw, 1.7rem); border: 1px solid var(--line); border-radius: 1rem; background: var(--paper); box-shadow: 0 3px 16px rgba(21, 51, 67, .035); }
+    section.card { scroll-margin-top: 1.25rem; }
+    h2 { margin: 0 0 .8rem; font-size: clamp(1.35rem, 3vw, 1.85rem); line-height: 1.25; letter-spacing: -.02em; }
+    h3 { margin: 1.5rem 0 .6rem; font-size: 1.13rem; line-height: 1.35; }
+    h4 { margin: 1.15rem 0 .5rem; font-size: 1rem; }
+    p { margin: .7rem 0; }
+    ul, ol { padding-left: 1.35rem; }
+    li + li { margin-top: .35rem; }
+    .small { color: var(--muted); font-size: .9rem; }
+    .callout { margin: 1rem 0; padding: .9rem 1rem; border-left: 4px solid var(--blue); border-radius: .25rem .6rem .6rem .25rem; background: var(--blue-pale); }
+    .callout.warning { border-left-color: #c88d20; background: var(--amber-pale); }
+    .callout p:first-child { margin-top: 0; }
+    .callout p:last-child { margin-bottom: 0; }
+    .jump { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; margin-top: 1rem; padding: .7rem 1rem; border-radius: .55rem; background: var(--blue); color: white; font-weight: 750; text-decoration: none; }
+    .jump:hover, .jump:focus-visible { background: var(--blue-dark); color: white; }
+    .label { display: inline-block; margin: 0 0 .6rem; color: var(--teal); font-size: .76rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+    .endpoint-head { padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+    .method { display: inline-block; margin-right: .45rem; padding: .2rem .45rem; border-radius: .3rem; background: #e3f3eb; color: #176344; font: 800 .78rem var(--mono); vertical-align: .18em; }
+    .path { color: #243d4b; font-family: var(--mono); font-size: .83em; overflow-wrap: anywhere; }
+    .endpoint-head h2 { overflow-wrap: anywhere; }
+    .table-wrap, .code-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+    .table-wrap { margin: 1rem 0; border: 1px solid var(--line); border-radius: .55rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .91rem; }
+    th, td { padding: .65rem .75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #f0f5f6; color: #294451; font-size: .82rem; font-weight: 750; }
+    tr:last-child td { border-bottom: 0; }
+    td code, p code, li code { font-family: var(--mono); font-size: .91em; overflow-wrap: anywhere; }
+    .field-table td:first-child, .field-table th:first-child { min-width: 9.5rem; }
+    .code-wrap { position: relative; margin: .8rem 0 1rem; border-radius: .65rem; background: #122633; color: #e9f2f4; }
+    pre { min-width: 0; margin: 0; padding: 1rem; overflow-x: auto; color: inherit; font: .82rem/1.6 var(--mono); tab-size: 2; white-space: pre; }
+    .code-label { display: block; padding: .45rem .85rem 0; color: #b9d3dc; font: 700 .7rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+    .flow { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: .7rem; background: #f8fafb; }
+    .flow-step { max-width: 720px; margin: 0 auto; padding: .75rem; border: 1px solid #cbd9df; border-radius: .5rem; background: white; text-align: center; }
+    .flow-step strong { display: block; color: var(--blue-dark); }
+    .flow-arrow { display: block; height: 1.8rem; color: var(--teal); text-align: center; font-size: 1.25rem; line-height: 1.8rem; }
+    .flow-note { margin: .35rem 0 .65rem; color: var(--muted); text-align: center; font-size: .84rem; }
+    .endpoint-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+    .endpoint-link { min-width: 0; min-height: 4.8rem; padding: .8rem; border: 1px solid var(--line); border-radius: .6rem; text-decoration: none; background: #fbfdfd; }
+    .endpoint-link:hover { border-color: #8ab5c4; background: var(--blue-pale); }
+    .endpoint-link strong { display: block; margin-bottom: .25rem; }
+    .endpoint-link code { font: .76rem/1.5 var(--mono); overflow-wrap: anywhere; color: #304b5a; }
+    .pending-list { list-style: none; padding: 0; }
+    .pending-list li { position: relative; padding: .75rem .8rem .75rem 2rem; border-bottom: 1px solid var(--line); }
+    .pending-list li::before { content: "□"; position: absolute; left: .6rem; top: .72rem; color: var(--amber); font-size: 1.15rem; }
+    .pending-list li:last-child { border: 0; }
+    .footnote { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; }
+    @media (max-width: 760px) {
+      .layout { display: block; padding: 0 1rem 3rem; }
+      .sidebar { display: none; }
+      .mobile-nav { display: block; }
+      .mobile-nav[open] { position: static; }
+      section.card { scroll-margin-top: 4.5rem; }
+      .endpoint-grid { grid-template-columns: 1fr; }
+      .masthead { padding-right: 1rem; padding-left: 1rem; }
+    }
+    @media (max-width: 390px) {
+      body { font-size: .97rem; }
+      .intro-card, section.card { border-radius: .75rem; }
+      th, td { padding: .55rem .6rem; }
+      pre { padding: .8rem; font-size: .76rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { :root { scroll-behavior: auto; } }
+    @media print {
+      :root { background: white; color: #111; font-size: 10.5pt; }
+      body { background: white; }
+      .masthead { padding: 1.4rem 0; background: white; color: #111; border-bottom: 2px solid #333; }
+      .eyebrow, .meta, .lede { color: #333; }
+      .status { border-color: #777; background: white; color: #111; }
+      .layout { display: block; width: auto; padding: 0; }
+      .sidebar, .mobile-nav, .skip-link, .jump { display: none !important; }
+      .intro-card, section.card { box-shadow: none; border-color: #aaa; break-inside: avoid-page; }
+      section.card { break-before: auto; }
+      a { color: #111; text-decoration: none; }
+      .table-wrap, .code-wrap { overflow: visible; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; color: #111; background: white; }
+      .code-wrap { border: 1px solid #aaa; background: white; }
+      .code-label { color: #333; }
+      table { font-size: 9pt; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <p class="eyebrow">Catálogo · Integraciones</p>
+      <h1>Propuesta de contratos de integración</h1>
+           <p class="lede">Una guía de lectura para revisar cómo se registrarían las altas iniciales y los despliegues en OCP y DevHub, el otorgamiento de accesos a DevHub para la autogestión, cómo el Catálogo se sincronizaría directamente con la API oficial de InvGate Service Desk y qué consultas de lectura expondría el Catálogo.</p>
+      <div class="status-row"><span class="status">Propuesta para análisis colaborativo</span><span class="meta">No describe servicios implementados ni una integración actualmente operativa.</span></div>
+    </div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Navegación de la propuesta">
+      <h2>En esta propuesta</h2>
+      <nav><ol class="toc">
+        <li><a href="#introduccion">Introducción</a></li>
+        <li><a href="#flujo">Flujo de extremo a extremo</a></li>
+        <li><a href="#modelo">Modelo e identidad</a></li>
+        <li><a href="#convenciones">Convenciones comunes</a></li>
+        <li class="sub"><a href="#errores">Sobre de error</a></li>
+        <li><a href="#contrato-1">1 · Setup OpenShift (R1)</a></li>
+          <li><a href="#contrato-2">2 · Deployment OpenShift (R3)</a></li>
+          <li><a href="#contrato-3">3 · Accesos DevHub (R2)</a></li>
+          <li><a href="#contrato-4">4 · Notificación para InvGate</a></li>
+          <li><a href="#contrato-5">5 · Proyectos por repartición</a></li>
+          <li><a href="#contrato-6">6 · Componentes por proyecto</a></li>
+          <li><a href="#contrato-7">7 · Historial por componente</a></li>
+          <li><a href="#contrato-8">8 · Despliegues por CUIL</a></li>
+        <li><a href="#privacidad">Privacidad y seguridad</a></li>
+        <li><a href="#pendientes">Decisiones pendientes</a></li>
+        <li><a href="#alcance">Alcance y siguiente revisión</a></li>
+      </ol></nav>
+    </aside>
+    <main id="contenido">
+      <details class="mobile-nav">
+        <summary>Navegar por secciones</summary>
+        <nav aria-label="Navegación de la propuesta"><ol class="toc">
+          <li><a href="#introduccion">Introducción</a></li><li><a href="#flujo">Flujo de extremo a extremo</a></li>
+          <li><a href="#modelo">Modelo e identidad</a></li><li><a href="#convenciones">Convenciones comunes</a></li>
+            <li class="sub"><a href="#errores">Sobre de error</a></li><li><a href="#contrato-1">1 · Setup OpenShift (R1)</a></li>
+            <li><a href="#contrato-2">2 · Deployment OpenShift (R3)</a></li><li><a href="#contrato-3">3 · Accesos DevHub (R2)</a></li>
+            <li><a href="#contrato-4">4 · Notificación para InvGate</a></li><li><a href="#contrato-5">5 · Proyectos por repartición</a></li>
+            <li><a href="#contrato-6">6 · Componentes por proyecto</a></li><li><a href="#contrato-7">7 · Historial por componente</a></li><li><a href="#contrato-8">8 · Despliegues por CUIL</a></li><li><a href="#privacidad">Privacidad y seguridad</a></li>
+          <li><a href="#pendientes">Decisiones pendientes</a></li><li><a href="#alcance">Alcance y siguiente revisión</a></li>
+        </ol></nav>
+      </details>
+      <article>
+        <section class="intro-card" id="introduccion" aria-labelledby="intro-title">
+          <span class="label">Lectura ejecutiva</span>
+          <h2 id="intro-title">Qué propone esta integración</h2>
+          <p>El Catálogo centralizaría las reparticiones de DGISIS GCABA, sus proyectos y los componentes de cada proyecto. Un componente puede vincularse con un repositorio Git y tener despliegues por ambiente (<code>dev</code>, <code>qa</code>, <code>hml</code>, <code>prod</code>), cada uno con su URL correspondiente.</p>
+           <div class="callout"><strong>La idea central:</strong> DevHub informa los accesos concedidos para la autogestión de una repartición. OpenShift informa eventos de <code>setup</code> para registrar o completar inicialmente un componente y eventos de <code>deployment</code> para cada intento de despliegue, exitoso o fallido. El Catálogo valida la identidad y registra cada evento de forma atómica; solo los eventos de OpenShift dejan preparada una sincronización durable con la API oficial de InvGate Service Desk. Solo los despliegues crean historial y estado vigente.</div>
+            <p>La solicitud y gestión inicial del ticket en InvGate, la concesión de acceso en DevHub y la operación humana de OpenShift preceden a sus respectivos eventos. Todo R1/setup de OpenShift debe incluir la referencia al ticket de setup existente. El evento de DevHub no sincroniza ni crea o actualiza tickets en InvGate. En R3/deployment de OpenShift, la referencia al ticket existente es opcional; la sincronización no presupone crear tickets.</p>
+           <p class="small">Alcance: recepción de eventos de acceso de DevHub, setup e intentos de despliegue de OpenShift, sincronización directa con la API oficial de InvGate Service Desk para OpenShift y consultas de lectura. La administración CRUD desde backoffice o API queda fuera de alcance.</p>
+          <a class="jump" href="#contrato-1">Si ya conoce el preámbulo, las salvaguardas y la introducción, puede ir directamente al JSON del primer endpoint <span aria-hidden="true">&nbsp;↓</span></a>
+          <h3>Cómo revisar</h3>
+          <ol><li>Revisar la identidad de repartición, proyecto, componente y evento.</li><li>Revisar los campos definidos por el Catálogo y las correspondencias entre identificadores de OpenShift y del Catálogo.</li><li>Acordar autenticación, relación con tickets y reglas de URL antes de cerrar los contratos.</li></ol>
+           <h3>Los siete recursos propuestos</h3>
+          <div class="endpoint-grid">
+            <a class="endpoint-link" href="#contrato-1"><strong>1 · Setup OpenShift (R1)</strong><code>POST /api/v1/setups</code></a>
+              <a class="endpoint-link" href="#contrato-2"><strong>2 · Deployment OpenShift (R3)</strong><code>POST /api/v1/deployments</code></a>
+              <a class="endpoint-link" href="#contrato-3"><strong>3 · DevHub → Catálogo (R2)</strong><code>POST /api/v1/devhub-accesses</code></a>
+              <a class="endpoint-link" href="#contrato-4"><strong>4 · Catálogo → API oficial de InvGate</strong><code>Sincronización asíncrona durable</code></a>
+              <a class="endpoint-link" href="#contrato-5"><strong>5 · Proyectos de repartición</strong><code>GET /api/v1/repartitions/{repartition_id}/projects</code></a>
+              <a class="endpoint-link" href="#contrato-6"><strong>6 · Componentes de proyecto</strong><code>GET /api/v1/projects/{project_id}/components</code></a>
+              <a class="endpoint-link" href="#contrato-7"><strong>7 · Historial de componente</strong><code>GET /api/v1/components/{component_id}/deployments</code></a>
+              <a class="endpoint-link" href="#contrato-8"><strong>8 · Despliegues por actor</strong><code>GET /api/v1/deployments?actor_cuil={cuil}</code></a>
+          </div>
+          <p class="small"><strong>Cómo leer las etiquetas:</strong> “Requisito indicado” es una premisa aportada para el análisis, no evidencia de implementación. “Propuesta” es un comportamiento sugerido que puede cambiar. “Pendiente” identifica una decisión que no se puede inferir de los requisitos.</p>
+        </section>
+
+        <section class="card" id="flujo">
+          <span class="label">Antes de los contratos</span><h2>Flujo de extremo a extremo</h2>
+          <div class="flow" aria-label="Secuencia conceptual del proceso">
+             <div class="flow-step"><strong>1 · Solicitud en InvGate</strong>Una persona crea la solicitud para la autogestión o el despliegue.</div><span class="flow-arrow" aria-hidden="true">↓</span>
+             <div class="flow-step"><strong>2 · Operación humana</strong>El equipo gestiona el ticket, concede el acceso en DevHub y opera OpenShift.</div><p class="flow-note">La solicitud, el ticket y esta operación inicial no interactúan con el Catálogo.</p><span class="flow-arrow" aria-hidden="true">↓ eventos de acceso, setup o intento de despliegue</span>
+             <div class="flow-step"><strong>3 · Eventos entrantes</strong>DevHub envía <code>POST /api/v1/devhub-accesses</code>; OpenShift envía <code>POST /api/v1/setups</code> (R1) y <code>POST /api/v1/deployments</code> (R3).</div><span class="flow-arrow" aria-hidden="true">↓</span>
+               <div class="flow-step"><strong>4 · Registro atómico en Catálogo</strong>El evento de DevHub conserva el evento original y crea o actualiza el acceso lógico y sus personas autorizadas. Un setup de OpenShift (R1) suministra los nombres iniciales y el ticket de setup obligatorio, crea o completa el proyecto, el componente y los <code>componente_entorno</code> informados solo si coinciden los datos ya establecidos; una diferencia de ticket, nombre, URL de repositorio o identidad externa se rechaza como conflicto. Persiste el ticket en <code>proyecto.nro_ticket_setup</code> y <code>registro_integracion.nro_ticket_invgate</code>, sin generar historial ni estado vigente. Un deployment de OpenShift (R3) resuelve el componente existente por el identificador estable de origen <code>component.component_id</code> y el entorno declarado, registra el historial y actualiza el estado vigente solo ante éxito: no crea proyecto, componente ni componente_entorno.</div><span class="flow-arrow" aria-hidden="true">↓ asincrónico y reintentable, solo para OpenShift</span>
+                <div class="flow-step"><strong>5 · API oficial de InvGate Service Desk</strong>Para eventos de OpenShift, el Catálogo sincroniza directamente las opciones de árbol/lista que correspondan y los campos personalizados del ticket de setup obligatorio en R1; en R3 solo los actualiza si existe una referencia de ticket. El evento de DevHub no crea, actualiza ni sincroniza tickets. Las operaciones exactas requieren validación en la instancia.</div>
+          </div>
+                <ol><li>DevHub envía un identificador estable, la ruta de repartición recibida, la referencia de ticket disponible y uno o más CUIL autorizados. OpenShift envía un identificador estable, claves de origen y actor; R1 agrega el ticket de setup obligatorio y R3 agrega los datos del intento.</li><li>En R1, el Catálogo normaliza la ruta y la vincula al nodo vigente de <code>organigrama</code> cuya <code>ruta_completa</code> coincide. Si no hay coincidencia, conserva la ruta con <code>organigrama_id: null</code>, la marca para revisión y lo expone en la respuesta; no rechaza el setup ni crea una repartición.</li><li>En una unidad lógica única, DevHub persiste el evento y crea o actualiza el acceso y sus personas autorizadas. En OpenShift, un <code>setup</code> (R1) crea o completa el proyecto, el componente y los <code>componente_entorno</code> informados solo cuando los datos ya establecidos son compatibles; si ticket, nombre, URL de repositorio o identidad externa difieren, rechaza el evento sin mutar datos. Persiste el ticket en <code>proyecto.nro_ticket_setup</code> y <code>registro_integracion.nro_ticket_invgate</code>, y registra la sincronización pendiente. Un <code>deployment</code> (R3) resuelve el componente existente por <code>component.component_id</code>, identificador estable aportado por el origen, y por <code>deployment.environment</code>; registra el intento histórico, puede crear la versión o tag y actualiza el puntero vigente solo si el resultado es exitoso. R3 no crea proyecto, componente ni componente_entorno.</li><li>La respuesta satisfactoria confirma esos pasos. Para DevHub no confirma ni inicia una sincronización con InvGate; para OpenShift no confirma que InvGate ya refleje la sincronización.</li><li>El Catálogo sincroniza y reintenta directamente contra la API oficial de InvGate Service Desk solo para eventos de OpenShift, según una política por acordar. La creación automática de tickets no está definida.</li></ol>
+           <div class="callout warning"><strong>Primer despliegue:</strong> <code>dev</code> es habitual, no una precondición. Un primer deployment válido puede ser en <code>qa</code>, <code>hml</code> o <code>prod</code>, pero solo después de un setup R1 que haya creado o completado el componente y el entorno correspondiente; el deployment no los crea.</div>
+        </section>
+
+        <section class="card" id="modelo">
+          <span class="label">Identidad y nomenclatura</span><h2>Un catálogo, identidades estables e historial</h2>
+          <div class="table-wrap"><table><thead><tr><th>Entidad</th><th>Identidad propuesta</th><th>Relación y propósito</th></tr></thead><tbody>
+              <tr><td>Repartición</td><td><code>route</code> recibida y normalizada; <code>organigrama_id</code> opcional al nodo vigente</td><td>R1/R2 conservan la ruta como foto histórica. Se vincula cuando coincide con <code>organigrama.ruta_completa</code>; si no coincide, queda <code>organigrama_id: null</code> y se marca para revisión. No tiene un código genérico de origen para identidad ni mapeo.</td></tr>
+            <tr><td>Persona</td><td><code>cuil</code> de 11 dígitos ASCII</td><td>Identidad institucional para los accesos DevHub. Se resuelve o crea por CUIL.</td></tr>
+            <tr><td>Acceso DevHub</td><td>Acceso lógico por repartición</td><td>Representa la concesión de autogestión y mantiene sus personas autorizadas; no representa proyectos ni despliegues.</td></tr>
+                <tr><td>Proyecto</td><td><code>project_id</code> interno canónico del Catálogo; <code>platform_project_id</code> es el ID externo de proyecto de OCP o DevHub</td><td>R1/setup crea o resuelve el proyecto por plataforma y <code>platform_project_id</code>, equivalente a <code>proyecto.id_proyecto_plataforma</code>. R3 de OCP no lo resuelve por ese identificador.</td></tr>
+               <tr><td>Componente</td><td><code>component.component_id</code> es el identificador estable aportado por el origen; <code>component_id</code> es el ID interno canónico del Catálogo</td><td>R1/setup crea o resuelve el componente por <code>component.component_id</code>, equivalente al valor almacenado en <code>componente.gitlab_repositorio_id</code>. OCP o DevHub lo pueden enviar en R1 y R3; no es un ID interno del Catálogo. <code>git_repository_url</code> permanece como URL, no identidad.</td></tr>
+               <tr><td>Entorno de componente</td><td><code>component_environment_id</code> interno canónico del Catálogo</td><td>Representa <code>componente_entorno.id</code>. R1/setup crea uno por cada ambiente reportado; R3 de OCP lo resuelve por el componente identificado desde el origen y <code>deployment.environment</code>, sin recibir ni requerir este ID interno.</td></tr>
+             <tr><td>Evento</td><td><code>event_id</code> global de origen para idempotencia</td><td><code>setup</code> registra o completa la identidad inicial del proyecto, componente y sus entornos, y exige el ticket de setup de OCP; <code>deployment</code> representa un intento histórico contra un entorno existente y puede omitir nombres y ticket.</td></tr>
+             <tr><td>Ticket InvGate</td><td><code>ticket.ticket_id</code> de InvGate</td><td>En R1/setup de este endpoint OCP es obligatorio y se persiste como <code>proyecto.nro_ticket_setup</code> y <code>registro_integracion.nro_ticket_invgate</code>. En R3/deployment es opcional y, si se informa, referencia un ticket de despliegue existente.</td></tr>
+              <tr><td>Despliegue</td><td><code>deployment_id</code> del Catálogo</td><td>Solo para eventos <code>deployment</code>: intento histórico, exitoso o fallido, con ambiente, actor, inicio, finalización, <code>deployment.tag</code> obligatorio y <code>deployment.commit_sha</code> opcional. <code>actor.username</code>, si se informa, mapea a <code>despliegue.ejecutado_por_texto</code>; <code>despliegue.ejecutado_por_persona_id</code> solo referencia una <code>persona</code> existente que pueda asociarse al actor. El tag identifica <code>componente_version.tag</code>; el commit SHA trazable corresponde a <code>despliegue.commit_sha</code>.</td></tr>
+            <tr><td>Estado vigente</td><td>Calculado por componente y ambiente</td><td>Apunta solo al intento exitoso más reciente según reglas temporales; no reemplaza el historial. Un <code>setup</code> no lo crea.</td></tr>
+            <tr><td>Sincronización</td><td><code>synchronization_id</code> estable, asociado persistentemente al evento</td><td>Trabajo durable para sincronizar directamente con la API oficial de InvGate Service Desk tanto <code>setup</code> como <code>deployment</code>; conserva el mismo ID entre reintentos.</td></tr>
+          </tbody></table></div>
+             <ul><li>Los IDs internos del Catálogo (<code>project_id</code>, <code>component_id</code> y <code>component_environment_id</code>) pueden figurar en respuestas y rutas de lectura; no se requieren de OCP ni DevHub. Los identificadores externos de origen, como <code>platform_project_id</code> y <code>component.component_id</code>, identifican las altas y resoluciones entrantes; los nombres son etiquetas.</li><li><code>platform_project_id</code> representa <code>proyecto.id_proyecto_plataforma</code>, el ID externo entregado por OCP o DevHub. <code>component.component_id</code> es el identificador estable externo de componente entregado por OCP o DevHub y mapea al valor almacenado en <code>componente.gitlab_repositorio_id</code>. <code>git_repository_url</code> es exclusivamente la URL del repositorio.</li><li>La repartición se resuelve solo normalizando <code>repartition.route</code> y comparándola con <code>organigrama.ruta_completa</code>; no se usa ni conserva un código genérico de repartición como mecanismo de identidad o mapeo.</li><li>R1 y R2 siempre conservan la ruta recibida. Si coincide con un nodo vigente, guardan su <code>organigrama_id</code>; si no, lo dejan en <code>null</code> y generan una marca de revisión. La falta de coincidencia no invalida el evento ni autoriza a crear registros de organigrama.</li><li>El evento R2 de DevHub se refleja conceptualmente en <code>registro_integracion</code>, <code>acceso_devhub</code>, <code>acceso_devhub_usuario</code> y <code>persona</code>. La persona se resuelve o crea por CUIL.</li><li>El nombre canónico requiere política acordada de normalización y alias; aquí no se fija un formato ni tabla real de equivalencias. Los tres nombres observados son obligatorios para la alta inicial mediante <code>setup</code>. R3/deployment no recibe nombres: resuelve el componente existente por <code>component.component_id</code> y el entorno por <code>deployment.environment</code>. Un nombre observado no sobrescribe un nombre acordado: una diferencia requiere la misma validación/resolución de conflicto.</li><li>Un componente lógico desplegado desde varios clústeres o ambientes sigue siendo una identidad con varios despliegues; <code>cluster_code</code> y el ambiente no crean copias.</li><li>CRUD queda fuera de alcance. La recepción R1 puede crear proyecto/componente desconocido; R3 nunca crea proyecto, componente ni componente_entorno, y ninguna recepción crea silenciosamente registros de <code>organigrama</code>.</li></ul>
+        </section>
+
+        <section class="card" id="convenciones">
+          <span class="label">Aplican a los contratos</span><h2>Convenciones HTTP y formato común</h2>
+          <p><strong>Propuesta:</strong> JSON UTF-8, rutas bajo <code>/api/v1</code>, respuestas <code>Content-Type: application/json</code> y fechas RFC 3339 en UTC (<code>Z</code>). Los ejemplos son sintéticos: no representan sistemas o personas reales.</p>
+          <p>Se propone HTTPS y cuentas de servicio autenticadas entre sistemas. El mecanismo, las credenciales, la rotación y los scopes requieren acuerdo; no se elige OAuth, certificados ni otro mecanismo. Si se aprueban esos estados, falta de autenticación válida devuelve <code>401</code> y una identidad autenticada sin permiso, <code>403</code>.</p>
+          <h3 id="errores">Sobre de error propuesto</h3>
+          <div class="code-wrap"><span class="code-label">JSON · ejemplo</span><pre><code>{
+  "error": {
+    "code": "invalid_repartition_route",
+    "message": "La ruta de repartición no cumple el formato requerido.",
+    "details": [{ "field": "repartition.route", "reason": "invalid_route_format" }],
+    "retryable": false,
+    "correlation_id": "corr-01J8EXAMPLE"
+  }
+}</code></pre></div>
+          <p><code>code</code> y <code>details</code> deben ayudar a corregir datos sin filtrar información sensible. <code>retryable</code> indica si repetir la misma solicitud sin cambios podría tener éxito; no sustituye al código HTTP. La forma exacta y los límites de detalle están propuestos, no cerrados.</p>
+        </section>
+
+        <section class="card" id="contrato-1">
+          <div class="endpoint-head"><span class="label">Contrato 1 · OpenShift → Catálogo · R1</span><h2><span class="method">POST</span><span class="path">/api/v1/setups</span></h2><p>Registra o completa la identidad inicial de repartición, proyecto, componente y sus ambientes. El ticket de setup de InvGate es obligatorio; este contrato no crea historial ni estado vigente de despliegue.</p></div>
+          <p class="callout">La separación de setup y deployment responde a invariantes, efectos de persistencia, requisitos de ticket y semánticas de reintento y evolución diferentes. Evitar payloads condicionales permite validar cada contrato de forma directa y ofrece mayor claridad a los clientes.</p>
+          <h3>Solicitud propuesta</h3><div class="code-wrap"><span class="code-label">JSON · payload entrante</span><pre><code>{
+  "schema_version": "1.0",
+  "event_id": "ocp-setup-01J8EXAMPLE000001",
+  "source": {
+    "system": "openshift"
+  },
+  "repartition": {
+    "route": "JGM/Secretaría de Ejemplo/Dirección de Sistemas de Ejemplo",
+    "name": "Dirección de Sistemas de Ejemplo"
+  },
+  "project": {
+    "platform_project_id": "ocp-prj-portal-ciudadano",
+    "name": "Portal Ciudadano"
+  },
+  "component": {
+    "component_id": "dgisis/api-identidad",
+    "name": "API de Identidad",
+    "git_repository_url": "https://git.example.invalid/dgisis/api-identidad"
+  },
+  "environments": [{ "environment": "dev", "space": "portal-ciudadano-dev" }],
+  "actor": { "cuil": "20123456789" },
+  "ticket": { "source_system": "invgate", "ticket_id": "SET-1042" }
+}</code></pre></div>
+          <h3>Campos, respuesta e idempotencia</h3><div class="table-wrap"><table class="field-table"><thead><tr><th>Campo</th><th>Tipo</th><th>Presencia y semántica propuesta</th></tr></thead><tbody>
+<tr><td><code>schema_version</code>, <code>event_id</code>, <code>source</code></td><td>string, string, object</td><td>Requeridos. El ID es global, estable en reintentos y la fuente tiene <code>system: "openshift"</code>; <code>cluster_code</code> es opcional.</td></tr>
+<tr><td><code>repartition</code></td><td>object</td><td>Requerido: <code>route</code> y <code>name</code>. Una ruta válida sin coincidencia se conserva con <code>organigrama_id: null</code> y marca de revisión, sin crear organigrama ni rechazar R1.</td></tr>
+<tr><td><code>project</code></td><td>object</td><td>Requerido: <code>platform_project_id</code> externo y <code>name</code>.</td></tr>
+<tr><td><code>component</code></td><td>object</td><td>Requerido: <code>component_id</code> estable de origen, almacenado en <code>componente.gitlab_repositorio_id</code>, más nombre y URL de repositorio. No recibe IDs internos.</td></tr>
+<tr><td><code>environments</code>, <code>actor</code></td><td>array, object</td><td>Requeridos. El arreglo no puede estar vacío y crea un <code>componente_entorno</code> por cada ambiente informado; <code>actor.cuil</code> es una cadena ASCII de 11 dígitos.</td></tr>
+<tr><td><code>ticket</code></td><td>object</td><td>Requerido: <code>source_system</code> es <code>"invgate"</code> y <code>ticket_id</code> no es vacío. Se persiste como <code>proyecto.nro_ticket_setup</code> y <code>registro_integracion.nro_ticket_invgate</code>.</td></tr>
+</tbody></table></div>
+<div class="code-wrap"><span class="code-label">JSON · respuesta 201 Created</span><pre><code>{
+  "event_id": "ocp-setup-01J8EXAMPLE000001",
+  "project": {
+    "project_id": "prj-cat-00210"
+  },
+  "component": {
+    "component_id": "cmp-cat-00831"
+  },
+  "component_action": "component.created_or_completed",
+  "repartition": { "organigrama_id": null, "review_required": true },
+  "recorded_at": "2026-10-06T14:10:03Z",
+  "synchronization": { "synchronization_id": "syn-01J8SETUP000001", "status": "pending" }
+}</code></pre></div>
+<p>Un replay semánticamente idéntico con el mismo <code>event_id</code> responde <code>200 OK</code> con el mismo recurso y <code>idempotent_replay: true</code>; no duplica entidades ni la sincronización. Para esta comparación no importan el orden de los ambientes, la normalización de URL, espacios o mayúsculas/minúsculas, ni la omisión de <code>cluster_code</code> opcional. Un <code>event_id</code> nuevo que repite un setup ya completo devuelve <code>409 setup_duplicate</code>. El mismo <code>event_id</code> con contenido semánticamente distinto devuelve <code>409 event_id_reused</code>. La unidad atómica persiste evento, identidad inicial, ticket y trabajo durable de InvGate.</p>
+<h3>Validación y errores propuestos</h3>
+<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>Código de ejemplo</th><th>Uso</th></tr></thead><tbody>
+  <tr><td>400</td><td><code>invalid_request</code></td><td>JSON mal formado, campo requerido ausente, clave desconocida o estructura incompatible con el payload de setup.</td></tr>
+  <tr><td>400</td><td><code>unsupported_schema_version</code></td><td><code>schema_version</code> no corresponde a una versión soportada.</td></tr>
+  <tr><td>401</td><td><code>unauthenticated</code></td><td>Falta autenticación válida, si se acuerda un esquema de autenticación entre sistemas.</td></tr>
+  <tr><td>403</td><td><code>forbidden</code></td><td>La identidad autenticada no tiene permiso para registrar setups, si se acuerda autorización por scopes o permisos.</td></tr>
+  <tr><td>422</td><td><code>invalid_null</code></td><td>Un campo del contrato se envía explícitamente como <code>null</code>; la omisión de un campo opcional no equivale a <code>null</code>.</td></tr>
+  <tr><td>422</td><td><code>invalid_repartition_route</code></td><td><code>repartition.route</code> falta o no cumple el formato requerido. Una ruta válida sin coincidencia vigente se acepta con <code>organigrama_id: null</code> y marca de revisión.</td></tr>
+  <tr><td>422</td><td><code>platform_project_id_required</code></td><td>Falta o está vacío <code>project.platform_project_id</code>, identificador externo necesario para crear o resolver el proyecto.</td></tr>
+  <tr><td>422</td><td><code>component_id_required</code></td><td>Falta o está vacío <code>component.component_id</code>, identificador estable de origen del componente.</td></tr>
+  <tr><td>422</td><td><code>names_required_for_setup</code></td><td>Falta o está vacío alguno de los nombres iniciales requeridos en <code>repartition.name</code>, <code>project.name</code> o <code>component.name</code>.</td></tr>
+  <tr><td>422</td><td><code>git_repository_url_required_for_setup</code></td><td>Falta o está vacía <code>component.git_repository_url</code>, requerida para registrar el setup inicial.</td></tr>
+  <tr><td>422</td><td><code>environments_required</code></td><td><code>environments</code> falta o es un arreglo vacío.</td></tr>
+  <tr><td>422</td><td><code>invalid_environment</code></td><td>Algún <code>environments[].environment</code> no es un ambiente admitido (<code>dev</code>, <code>qa</code>, <code>hml</code> o <code>prod</code>).</td></tr>
+  <tr><td>422</td><td><code>ticket_required_for_setup</code></td><td>Falta <code>ticket</code>, <code>ticket.source_system</code> no es <code>"invgate"</code> o falta <code>ticket.ticket_id</code>.</td></tr>
+  <tr><td>422</td><td><code>invalid_ticket</code></td><td><code>ticket.ticket_id</code> está vacío o la referencia al ticket de setup existente no es válida.</td></tr>
+   <tr><td>422</td><td><code>invalid_cuil</code></td><td><code>actor.cuil</code> no es una cadena ASCII de exactamente 11 dígitos.</td></tr>
+   <tr><td>409</td><td><code>setup_duplicate</code></td><td>Un <code>event_id</code> nuevo repite un setup ya completo sin aportar información nueva.</td></tr>
+   <tr><td>409</td><td><code>setup_conflict</code></td><td>El setup contradice datos ya establecidos. La respuesta incluye <code>conflicts</code> con cada <code>field</code> y <code>reason</code> afectados, por ejemplo ticket, nombre, URL de repositorio o identidad externa.</td></tr>
+   <tr><td>409</td><td><code>event_id_reused</code></td><td>El mismo <code>event_id</code> ya aceptado se reenvía con contenido distinto.</td></tr>
+  <tr><td>503</td><td><code>temporarily_unavailable</code></td><td>No se completó el registro atómico; puede reintentarse con el mismo <code>event_id</code>.</td></tr>
+</tbody></table></div>
+        </section>
+
+        <section class="card" id="contrato-2">
+          <div class="endpoint-head"><span class="label">Contrato 2 · OpenShift → Catálogo · R3</span><h2><span class="method">POST</span><span class="path">/api/v1/deployments</span></h2><p>Registra un intento de despliegue contra un componente y ambiente existentes; nunca crea persona, proyecto, componente ni <code>componente_entorno</code>. Solo un resultado exitoso actualiza el estado vigente.</p></div>
+          <h3>Solicitud propuesta</h3><div class="code-wrap"><span class="code-label">JSON · payload entrante</span><pre><code>{
+  "schema_version": "1.0",
+  "event_id": "ocp-deployment-01J8EXAMPLE000002",
+  "started_at": "2026-10-06T13:58:00Z",
+  "finished_at": "2026-10-06T14:03:00Z",
+  "source": { "system": "openshift", "cluster_code": "cluster-dev-01" },
+  "component": {
+    "component_id": "dgisis/api-identidad"
+  },
+  "actor": { "cuil": "20123456789", "username": "ocp-pipeline" },
+  "deployment": {
+    "environment": "dev",
+    "space": "portal-ciudadano-dev",
+    "outcome": "failed",
+    "result_summary": "Falló la etapa de descarga de imagen.",
+    "tag": "2.4.2",
+    "commit_sha": "9f6b1c4d8e2a7b5f3c1d0e9a8b7c6d5e4f3a2b1c"
+  },
+  "ticket": { "source_system": "invgate", "ticket_id": "INC-1042" }
+}</code></pre></div>
+          <h3>Campos, respuesta e idempotencia</h3><div class="table-wrap"><table class="field-table"><thead><tr><th>Campo</th><th>Tipo</th><th>Presencia y semántica propuesta</th></tr></thead><tbody>
+<tr><td><code>schema_version</code>, <code>event_id</code>, <code>source</code></td><td>string, string, object</td><td>Requeridos; fuente OpenShift y reintentos con el mismo ID. <code>cluster_code</code> es opcional.</td></tr>
+<tr><td><code>started_at</code>, <code>finished_at</code></td><td>RFC 3339 UTC</td><td>Requeridos; la finalización no precede al inicio.</td></tr>
+<tr><td><code>component</code></td><td>object</td><td>Requerido: solo el identificador estable externo <code>component.component_id</code>; resuelve, no crea.</td></tr>
+<tr><td><code>actor</code></td><td>object</td><td><code>cuil</code> requerido; <code>username</code> opcional y no vacío. Solo una persona existente e inequívoca puede asociarse; de otro modo se conserva el username como texto y no se crea persona.</td></tr>
+<tr><td><code>deployment</code></td><td>object</td><td>Requerido: ambiente, resultado y <code>tag</code>. <code>commit_sha</code> y <code>space</code> son opcionales. Éxito requiere URL; fallo requiere <code>result_summary</code>, sin secretos ni logs completos.</td></tr>
+<tr><td><code>ticket</code></td><td>object</td><td>Opcional. Si se informa, referencia un ticket de deployment existente; no ordena crearlo.</td></tr>
+</tbody></table></div>
+<div class="code-wrap"><span class="code-label">JSON · respuesta 201 Created</span><pre><code>{
+  "deployment_id": "dep-01J8EXAMPLE000001",
+  "event_id": "ocp-deployment-01J8EXAMPLE000002",
+  "component": {
+    "component_id": "cmp-cat-00831"
+  },
+  "component_environment": { "component_environment_id": "cenv-cat-00091" },
+  "actor": { "cuil": "20123456789", "username": "ocp-pipeline", "persona_id": null },
+  "component_action": "component.resolved",
+  "recorded_at": "2026-10-06T14:03:02Z",
+  "synchronization": { "synchronization_id": "syn-01J8DEPLOY000001", "status": "pending" }
+}</code></pre></div>
+<p>Un replay idéntico responde <code>200 OK</code> con el mismo recurso y <code>idempotent_replay: true</code>. La comparación incluye componente, ambiente, actor, tiempos, resultado, URL, tag, commit, ticket informado y resumen. Diferencias devuelven <code>409 event_id_reused</code>; actores que resuelven personas distintas devuelven <code>409 identity_conflict</code>. Los fallos quedan en historial y no reemplazan el vigente exitoso.</p>
+<h3>Validación y errores propuestos</h3>
+<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>Código de ejemplo</th><th>Uso</th></tr></thead><tbody>
+  <tr><td>400</td><td><code>invalid_request</code></td><td>JSON mal formado, campo requerido ausente, clave desconocida o estructura incompatible con el payload de deployment.</td></tr>
+  <tr><td>400</td><td><code>unsupported_schema_version</code></td><td><code>schema_version</code> no corresponde a una versión soportada.</td></tr>
+  <tr><td>401</td><td><code>unauthenticated</code></td><td>Falta autenticación válida, si se acuerda un esquema de autenticación entre sistemas.</td></tr>
+  <tr><td>403</td><td><code>forbidden</code></td><td>La identidad autenticada no tiene permiso para registrar deployments, si se acuerda autorización por scopes o permisos.</td></tr>
+  <tr><td>422</td><td><code>invalid_null</code></td><td>Un campo del contrato se envía explícitamente como <code>null</code>; la omisión de un campo opcional no equivale a <code>null</code>.</td></tr>
+  <tr><td>422</td><td><code>component_id_required</code></td><td>Falta o está vacío <code>component.component_id</code>, identificador estable con el que se resuelve el componente existente.</td></tr>
+  <tr><td>422</td><td><code>component_not_found</code></td><td>No existe un componente previamente creado o completado por setup para el <code>component.component_id</code> informado.</td></tr>
+  <tr><td>422</td><td><code>component_inactive</code></td><td>El componente resuelto existe, pero no está activo para registrar el intento.</td></tr>
+  <tr><td>422</td><td><code>deployment_environment_not_found</code></td><td>El componente existe, pero no tiene un <code>componente_entorno</code> para <code>deployment.environment</code>; R3 no lo crea.</td></tr>
+  <tr><td>422</td><td><code>invalid_environment</code></td><td><code>deployment.environment</code> no es un ambiente admitido (<code>dev</code>, <code>qa</code>, <code>hml</code> o <code>prod</code>).</td></tr>
+  <tr><td>422</td><td><code>invalid_attempt_time</code></td><td><code>started_at</code> o <code>finished_at</code> no es RFC 3339 UTC, o la finalización precede al inicio.</td></tr>
+  <tr><td>422</td><td><code>deployment_required</code></td><td>Falta el objeto <code>deployment</code> requerido.</td></tr>
+  <tr><td>422</td><td><code>invalid_outcome</code></td><td><code>deployment.outcome</code> no identifica un resultado exitoso o fallido.</td></tr>
+  <tr><td>422</td><td><code>tag_required_for_deployment</code></td><td>Falta o está vacío <code>deployment.tag</code>.</td></tr>
+  <tr><td>422</td><td><code>invalid_commit_sha</code></td><td><code>deployment.commit_sha</code>, si se informa, no tiene un formato de SHA trazable válido.</td></tr>
+  <tr><td>422</td><td><code>invalid_username</code></td><td><code>actor.username</code>, si se informa, está vacío o no es válido.</td></tr>
+  <tr><td>422</td><td><code>url_required_for_success</code></td><td>Falta la URL de deployment cuando <code>deployment.outcome</code> es exitoso.</td></tr>
+  <tr><td>422</td><td><code>result_summary_required_for_failure</code></td><td>Falta <code>deployment.result_summary</code> cuando <code>deployment.outcome</code> es fallido.</td></tr>
+  <tr><td>422</td><td><code>invalid_ticket</code></td><td>Si se informa <code>ticket</code>, su referencia al ticket de deployment existente está vacía o no es válida.</td></tr>
+  <tr><td>422</td><td><code>invalid_cuil</code></td><td><code>actor.cuil</code> no es una cadena ASCII de exactamente 11 dígitos.</td></tr>
+  <tr><td>422</td><td><code>invalid_url</code></td><td>La URL informada para un deployment exitoso no tiene un formato válido.</td></tr>
+  <tr><td>409</td><td><code>event_id_reused</code></td><td>El mismo <code>event_id</code> ya aceptado se reenvía con contenido distinto.</td></tr>
+  <tr><td>409</td><td><code>identity_conflict</code></td><td><code>actor.cuil</code> y <code>actor.username</code> resuelven personas existentes distintas.</td></tr>
+  <tr><td>503</td><td><code>temporarily_unavailable</code></td><td>No se completó el registro atómico; puede reintentarse con el mismo <code>event_id</code>.</td></tr>
+</tbody></table></div>
+        </section>
+
+        <section class="card" id="contrato-3">
+          <div class="endpoint-head"><span class="label">Contrato 3 · DevHub → Catálogo · R2</span><h2><span class="method">POST</span><span class="path">/api/v1/devhub-accesses</span></h2><p>Registra el evento mediante el cual DevHub otorga a uno o más usuarios referentes de una repartición acceso al ambiente DevHub, para que puedan autogestionarlo. No crea proyectos, componentes, historial de despliegues ni estado vigente de despliegue.</p></div>
+          <h3>Solicitud propuesta · JSON disponible aquí</h3>
+          <div class="code-wrap"><span class="code-label">JSON · payload entrante</span><pre><code>{
+  "schema_version": "1.0",
+  "event_id": "devhub-evt-01J8EXAMPLE000001",
+  "occurred_at": "2026-10-06T14:10:00Z",
+  "source": { "system": "devhub" },
+   "repartition": {
+     "route": "JGM/Secretaría de Ejemplo/Dirección de Sistemas de Ejemplo",
+     "name": "Dirección de Sistemas de Ejemplo"
+  },
+  "ticket": { "source_system": "invgate", "ticket_id": "INC-1042" },
+  "requested_by": { "cuil": "20123456789" },
+  "authorized_users": [
+    { "cuil": "27345678901" },
+    { "cuil": "20456789012" }
+  ]
+}</code></pre></div>
+          <h3>Campos, tipos y presencia</h3>
+          <div class="table-wrap"><table class="field-table"><thead><tr><th>Campo</th><th>Tipo</th><th>Presencia y semántica propuesta</th></tr></thead><tbody>
+            <tr><td><code>schema_version</code></td><td>string</td><td>Requerido; versión soportada del esquema, propuesta actualmente como <code>"1.0"</code>.</td></tr>
+            <tr><td><code>event_id</code></td><td>string</td><td>Requerido; ID globalmente único y estable para todos los reintentos del mismo evento.</td></tr>
+            <tr><td><code>occurred_at</code></td><td>string, RFC 3339 UTC</td><td>Requerido; momento en que DevHub concedió el acceso, no hora de recepción.</td></tr>
+            <tr><td><code>source</code></td><td>object</td><td>Requerido; <code>system</code> tiene el valor fijo <code>"devhub"</code>.</td></tr>
+              <tr><td><code>repartition</code></td><td>object</td><td>Requerido; <code>route</code> y <code>name</code> son strings no vacíos. La ruta es la única base de resolución: se normaliza y se vincula al nodo vigente de <code>organigrama</code> cuya <code>ruta_completa</code> coincide. Si no coincide, el acceso se persiste con <code>organigrama_id: null</code> y <code>review_required: true</code>, sin rechazar R2 ni crear organigrama. No admite un código genérico de repartición.</td></tr>
+            <tr><td><code>ticket</code></td><td>object</td><td>Requerido; referencia a un ticket existente de InvGate mediante <code>source_system</code> con valor <code>"invgate"</code> y <code>ticket_id</code> no vacío. Es una referencia, no una orden de crear o actualizar el ticket.</td></tr>
+            <tr><td><code>requested_by</code></td><td>object</td><td>Opcional; cuando está disponible representa a la DG solicitante. Su <code>cuil</code> es requerido y tiene 11 dígitos ASCII. El esquema permite omitir el objeto.</td></tr>
+            <tr><td><code>authorized_users</code></td><td>array de objects</td><td>Requerido y no vacío. Cada objeto requiere <code>cuil</code> como string de exactamente 11 dígitos ASCII; cada persona autorizada se identifica por CUIL.</td></tr>
+          </tbody></table></div>
+          <ul><li>Campo opcional ausente significa “no informado”; <code>null</code> no equivale a omisión y se rechaza con <code>422 invalid_null</code>. No enviar objetos opcionales vacíos. Claves adicionales desconocidas se rechazan con <code>400</code> para evitar aceptar errores de nombre silenciosamente.</li><li>El Catálogo resuelve o crea una <code>persona</code> por cada CUIL informado. Conceptualmente, R2 se persiste en <code>registro_integracion</code>, <code>acceso_devhub</code>, <code>acceso_devhub_usuario</code> y <code>persona</code>.</li><li>La operación no sincroniza información a InvGate ni crea o actualiza un ticket de InvGate.</li></ul>
+          <h3>Respuesta · <code>201 Created</code> para evento nuevo</h3>
+          <div class="code-wrap"><span class="code-label">JSON · respuesta</span><pre><code>{
+  "event_id": "devhub-evt-01J8EXAMPLE000001",
+  "devhub_access_id": "dha-01J8EXAMPLE000001",
+    "repartition": {
+      "route": "JGM/Secretaría de Ejemplo/Dirección de Sistemas de Ejemplo",
+      "organigrama_id": null,
+      "review_required": true
+    },
+  "authorized_users": [
+    { "cuil": "27345678901" },
+    { "cuil": "20456789012" }
+  ],
+  "recorded_at": "2026-10-06T14:10:03Z"
+}</code></pre></div>
+          <h3>Respuesta · <code>200 OK</code> para repetición idéntica</h3>
+          <div class="code-wrap"><span class="code-label">JSON · replay idempotente</span><pre><code>{
+  "event_id": "devhub-evt-01J8EXAMPLE000001",
+  "devhub_access_id": "dha-01J8EXAMPLE000001",
+    "repartition": {
+      "route": "JGM/Secretaría de Ejemplo/Dirección de Sistemas de Ejemplo",
+      "organigrama_id": null,
+      "review_required": true
+    },
+  "authorized_users": [
+    { "cuil": "27345678901" },
+    { "cuil": "20456789012" }
+  ],
+  "recorded_at": "2026-10-06T14:10:03Z",
+  "idempotent_replay": true
+}</code></pre></div>
+          <h3>Atomicidad e idempotencia</h3>
+          <ul><li>La idempotencia se define por <code>event_id</code>. Para un evento nuevo, se persiste el evento original y se crea o actualiza el acceso lógico de DevHub y sus personas autorizadas en una única unidad atómica.</li><li>El mismo <code>event_id</code> con contenido semántico idéntico devuelve <code>200</code>, el mismo acceso lógico y <code>idempotent_replay: true</code>, sin duplicar personas ni autorizaciones.</li><li>El mismo <code>event_id</code> con datos distintos devuelve <code>409 event_id_reused</code>. Participan en la comparación el momento, la repartición, la referencia de ticket, la DG solicitante cuando está informada y el conjunto de CUIL autorizados.</li><li>Este contrato no crea proyectos, componentes, historial de despliegues ni estado vigente de despliegue.</li></ul>
+          <h3>Validación y errores propuestos</h3>
+          <div class="table-wrap"><table><thead><tr><th>HTTP</th><th>Código de ejemplo</th><th>Uso</th></tr></thead><tbody>
+            <tr><td>400</td><td><code>invalid_request</code>, <code>unsupported_schema_version</code></td><td>JSON mal formado, campo requerido ausente, versión no soportada o estructura inválida.</td></tr>
+            <tr><td>401 / 403</td><td><code>unauthenticated</code> / <code>forbidden</code></td><td>Solo si se acuerda esquema de autenticación/autorización.</td></tr>
+            <tr><td>422</td><td><code>invalid_repartition_route</code></td><td>Ruta de repartición ausente o mal formada. Una ruta válida sin nodo vigente coincidente se acepta, se persiste con <code>organigrama_id: null</code> y se marca para revisión; no crea organigrama.</td></tr>
+            <tr><td>409</td><td><code>event_id_reused</code></td><td>Contenido distinto para un ID idempotente ya aceptado.</td></tr>
+            <tr><td>422</td><td><code>invalid_cuil</code>, <code>authorized_users_required</code>, <code>invalid_occurred_at</code></td><td>CUIL distinto de una cadena de 11 dígitos ASCII, lista de personas autorizadas ausente o vacía, o fecha inválida.</td></tr>
+            <tr><td>503</td><td><code>temporarily_unavailable</code></td><td>No se completó el registro atómico; puede reintentarse con el mismo <code>event_id</code>.</td></tr>
+          </tbody></table></div>
+        </section>
+
+        <section class="card" id="contrato-4">
+          <div class="endpoint-head"><span class="label">Contrato 4 · Catálogo → API oficial de InvGate Service Desk</span><h2>Sincronización asíncrona durable</h2><p>Por cada evento <code>setup</code> o <code>deployment</code> aceptado, el Catálogo conserva un trabajo de sincronización durable y reintentable contra la API oficial de InvGate Service Desk. No existe un endpoint único de notificación ni un receptor personalizado del equipo.</p></div>
+          <div class="callout warning"><strong>Propuesta sujeta a validación en la instancia.</strong> Las operaciones, permisos, campos disponibles y comportamiento de la API oficial deben confirmarse con la documentación y configuración de la instancia de InvGate Service Desk. Este documento no afirma endpoints, credenciales ni capacidades implementadas. En R3 de OpenShift, el trabajo se origina solo después de resolver el componente por <code>component.component_id</code> y el entorno por <code>deployment.environment</code>; no produce altas de esas entidades.</div>
+          <h3>Propósito de la sincronización</h3>
+          <div class="table-wrap"><table><thead><tr><th>Situación</th><th>Operación propuesta sobre la API oficial</th><th>Límites</th></tr></thead><tbody>
+             <tr><td><code>setup</code></td><td>Mantener las opciones de árbol o lista necesarias para reflejar repartición, proyecto y componente con los nombres iniciales suministrados, incluida la URL inicial de repositorio cuando exista un campo de destino aplicable, y actualizar los campos personalizados acordados del ticket de setup recibido.</td><td>La sincronización ocurre directamente desde el Catálogo. El ticket de setup existente es obligatorio en R1; no se crea historial de despliegues ni tickets nuevos.</td></tr>
+            <tr><td><code>deployment</code> sin referencia de ticket</td><td>Mantener las opciones de árbol o lista que correspondan con los nombres canónicos conocidos cuando los nombres del deployment se omitan, incluida la URL conocida del componente si existe un campo de destino aplicable aunque el deployment actual la omita.</td><td>Los campos de deployment desconocidos pueden omitirse. No se crea ni se busca un ticket por inferencia.</td></tr>
+            <tr><td><code>deployment</code> con referencia de ticket existente</td><td>Además de mantener las opciones necesarias con los nombres canónicos conocidos cuando los nombres del deployment se omitan, actualizar los campos personalizados acordados del ticket existente; puede usar la URL conocida del componente cuando exista un campo de destino aplicable aunque el deployment actual la omita.</td><td>La referencia debe validarse contra la instancia; no se inventan tickets ni IDs. <code>result_summary</code> nunca se envía a InvGate.</td></tr>
+          </tbody></table></div>
+          <p>La forma de representar el árbol o las listas, qué campos personalizados existen y cuáles se actualizan son decisiones pendientes de validación. Esta propuesta describe el propósito de las operaciones y no fija rutas, métodos HTTP, cuerpos, credenciales ni respuestas de la API de InvGate.</p>
+          <h3>Datos y omisiones</h3>
+            <ul><li>La sincronización de <code>setup</code> se realiza directamente con InvGate, mantiene las opciones de árbol o lista y actualiza los campos personalizados acordados del ticket de setup obligatorio; usa los nombres iniciales suministrados y registra la URL inicial de repositorio cuando exista un campo de destino aplicable.</li><li>Para un <code>deployment</code>, el Catálogo solo transmite los datos que estén disponibles y que correspondan a los campos acordados en la instancia. Los campos de deployment desconocidos se pueden omitir; si se omiten nombres, la sincronización usa los nombres canónicos conocidos cuando sean aplicables, y si se omite <code>git_repository_url</code>, puede usar la URL conocida del componente cuando exista un campo de destino aplicable.</li><li><code>deployment.tag</code> y <code>deployment.commit_sha</code> se conservan para la trazabilidad R3 en el Catálogo; no se envían a InvGate salvo que la instancia tenga un campo acordado para ello.</li><li><code>result_summary</code> se conserva exclusivamente en el Catálogo para el historial y <strong>nunca se envía a InvGate</strong>.</li><li>En R3, si no hay una referencia de ticket válida, el Catálogo no crea ni actualiza tickets; mantiene únicamente las opciones de árbol o lista que se hayan acordado. R1 no acepta esa ausencia.</li><li>CUIL y otros datos personales solo se usarán si la finalidad, los campos y los permisos de la instancia los autorizan; no se infiere su envío de este contrato.</li></ul>
+          <h3>Durabilidad y reintentos</h3>
+          <ul><li>El Catálogo asigna un <code>synchronization_id</code> estable al trabajo asociado al evento y conserva su estado para reintentos.</li><li>El registro del evento y la persistencia de ese trabajo son atómicos; el evento sigue siendo válido aunque una sincronización posterior no pueda completarse.</li><li>Los reintentos se realizan directamente contra las operaciones oficiales validadas de InvGate. Frecuencia, backoff, retención y atención de fallos persistentes requieren acuerdo.</li><li>La estrategia de idempotencia debe diseñarse según las capacidades confirmadas de la instancia; este documento no presupone una respuesta, código HTTP ni mecanismo de deduplicación de InvGate.</li></ul>
+        </section>
+
+        <section class="card" id="contrato-5">
+          <div class="endpoint-head"><span class="label">Contrato 5 · Consulta de lectura</span><h2><span class="method">GET</span><span class="path">/api/v1/repartitions/{repartition_id}/projects</span></h2><p>Lista proyectos de una repartición conocida. No habilita altas, modificaciones ni bajas.</p></div>
+          <p>Parámetros comunes: <code>limit</code> y <code>cursor</code>.</p>
+          <div class="code-wrap"><span class="code-label">HTTP · ejemplo</span><pre><code>GET /api/v1/repartitions/rep-cat-00042/projects?limit=2</code></pre></div>
+          <div class="code-wrap"><span class="code-label">JSON · respuesta</span><pre><code>{
+  "items": [
+     { "project_id": "prj-cat-00210", "platform_project_id": "ocp-prj-portal-ciudadano", "name": "Portal Ciudadano", "repartition_id": "rep-cat-00042" },
+     { "project_id": "prj-cat-00211", "platform_project_id": "ocp-prj-datos-abiertos", "name": "Datos Abiertos", "repartition_id": "rep-cat-00042" }
+  ],
+  "page": { "limit": 2, "next_cursor": null }
+}</code></pre></div>
+          <p>Los resultados exponen identificadores canónicos para no reconstruir relaciones por nombre.</p>
+        </section>
+
+        <section class="card" id="contrato-6">
+          <div class="endpoint-head"><span class="label">Contrato 6 · Consulta de lectura</span><h2><span class="method">GET</span><span class="path">/api/v1/projects/{project_id}/components</span></h2><p>Lista componentes de un proyecto conocido, con repositorio si está registrado y estado vigente por ambiente.</p></div>
+          <div class="code-wrap"><span class="code-label">HTTP · ejemplo</span><pre><code>GET /api/v1/projects/prj-cat-00210/components?limit=1</code></pre></div>
+          <div class="code-wrap"><span class="code-label">JSON · respuesta</span><pre><code>{
+  "items": [
+    {
+      "component_id": "cmp-cat-00831",
+       "git_repository_id": "dgisis/api-identidad",
+      "name": "API de Identidad",
+      "project_id": "prj-cat-00210",
+      "git_repository_url": "https://git.example.invalid/dgisis/api-identidad",
+      "current_deployments": [
+          { "component_environment_id": "cenv-cat-00091", "environment": "dev", "deployment_id": "dep-01J8EXAMPLE000001", "outcome": "succeeded", "url": "https://api-identidad.dev.example.invalid", "started_at": "2026-10-06T14:24:10Z", "finished_at": "2026-10-06T14:25:30Z", "tag": "2.4.1", "commit_sha": "4d2c1b0a9f8e7d6c5b4a39281716151413121110" },
+          { "component_environment_id": "cenv-cat-00092", "environment": "qa", "deployment_id": "dep-01J7EXAMPLE000021", "outcome": "succeeded", "url": "https://api-identidad.qa.example.invalid", "started_at": "2026-10-05T11:00:10Z", "finished_at": "2026-10-05T11:02:00Z", "tag": "2.4.0" }
+      ]
+    }
+  ],
+  "page": { "limit": 1, "next_cursor": "eyJvZmZzZXQiOjF9" }
+}</code></pre></div>
+          <p><code>current_deployments</code> tiene cero o un despliegue vigente por ambiente y solo representa intentos con <code>outcome: succeeded</code>. Un intento fallido no crea ni reemplaza este estado; se expone solo en el historial. Un componente creado o completado solo por un evento <code>setup</code> figura en esta lista con <code>current_deployments: []</code> hasta que se registre un deployment. No se incluye ambiente sin despliegue exitoso; clientes pueden reconocer el enum completo. El <code>git_repository_id</code> de este ejemplo es un campo de respuesta de lectura del Catálogo que expone el valor de origen almacenado; no es un campo requerido de los payloads entrantes. Si <code>git_repository_url</code> todavía no fue informado/verificado, se omite.</p>
+        </section>
+
+        <section class="card" id="contrato-7">
+          <div class="endpoint-head"><span class="label">Contrato 7 · Consulta de lectura</span><h2><span class="method">GET</span><span class="path">/api/v1/components/{component_id}/deployments</span></h2><p>Consulta el historial de intentos de despliegue de un componente, exitosos y fallidos; permite filtrar por <code>environment</code>. Los eventos <code>setup</code> no son despliegues y no se incluyen.</p></div>
+          <p>Orden propuesto: <code>finished_at</code> descendente y, en empate, <code>event_id</code> descendente para un listado estable. <code>actor</code> se omite por defecto y solo se incluye si el cliente tiene scope autorizado para datos personales.</p>
+          <div class="code-wrap"><span class="code-label">HTTP · ejemplo</span><pre><code>GET /api/v1/components/cmp-cat-00831/deployments?environment=dev&amp;limit=2</code></pre></div>
+          <div class="code-wrap"><span class="code-label">JSON · respuesta</span><pre><code>{
+  "items": [
+      { "deployment_id": "dep-01J8EXAMPLE000001", "event_id": "ocp-evt-01J8EXAMPLE000001", "component_environment_id": "cenv-cat-00091", "environment": "dev", "outcome": "succeeded", "url": "https://api-identidad.dev.example.invalid", "started_at": "2026-10-06T14:24:10Z", "finished_at": "2026-10-06T14:25:30Z", "tag": "2.4.1", "commit_sha": "4d2c1b0a9f8e7d6c5b4a39281716151413121110" },
+       { "deployment_id": "dep-01J8EXAMPLE000002", "event_id": "ocp-evt-01J8EXAMPLE000002", "component_environment_id": "cenv-cat-00091", "environment": "dev", "outcome": "failed", "started_at": "2026-10-06T13:58:00Z", "finished_at": "2026-10-06T14:03:00Z", "result_summary": "Falló la etapa de descarga de imagen: el registro no devolvió la imagen solicitada.", "tag": "2.4.2" }
+  ],
+  "page": { "limit": 2, "next_cursor": null }
+}</code></pre></div>
+          <p>Cuando el historial informa un fallo, incluye <code>result_summary</code> como resumen útil de la etapa fallida y su detalle relevante. No expone secretos, tokens, credenciales ni logs completos. Un componente registrado únicamente por setup devuelve <code>"items": []</code> hasta que se registre un deployment.</p>
+        </section>
+
+        <section class="card" id="contrato-8">
+          <div class="endpoint-head"><span class="label">Contrato 8 · Consulta sensible de lectura</span><h2><span class="method">GET</span><span class="path">/api/v1/deployments?actor_cuil={cuil}</span></h2><p>Lista intentos de despliegue cuyos eventos registrados observaron a ese actor, incluidos éxitos y fallos; no incluye eventos <code>setup</code>. Esta consulta requiere autorización específica para datos personales, no solo permiso general de lectura.</p></div>
+          <p>CUIL es una cadena de 11 dígitos con codificación URL adecuada. Se recomienda no ponerlo en rutas; usar query tampoco elimina exposición en logs, historiales y métricas.</p>
+          <div class="code-wrap"><span class="code-label">HTTP · ejemplo</span><pre><code>GET /api/v1/deployments?actor_cuil=20123456789&amp;limit=2</code></pre></div>
+          <div class="code-wrap"><span class="code-label">JSON · respuesta</span><pre><code>{
+  "items": [
+    {
+      "deployment_id": "dep-01J8EXAMPLE000001",
+      "event_id": "ocp-evt-01J8EXAMPLE000001",
+        "actor": { "cuil": "20123456789", "username": "ocp-pipeline" },
+       "component": {
+         "component_id": "cmp-cat-00831",
+         "name": "API de Identidad"
+       },
+       "project": {
+         "project_id": "prj-cat-00210",
+         "name": "Portal Ciudadano"
+       },
+       "repartition": {
+         "repartition_id": "rep-cat-00042",
+         "name": "Dirección de Sistemas de Ejemplo"
+       },
+      "environment": "dev",
+      "outcome": "succeeded",
+      "url": "https://api-identidad.dev.example.invalid",
+      "started_at": "2026-10-06T14:24:10Z",
+      "finished_at": "2026-10-06T14:25:30Z"
+    }
+  ],
+  "page": { "limit": 2, "next_cursor": null }
+}</code></pre></div>
+          <div class="callout warning"><strong>Interpretación:</strong> esta relación solo refleja que el CUIL y, cuando se informa, el username fueron observados como actor de un despliegue. No acredita autorización, titularidad, pertenencia a un equipo ni membresía en repartición, proyecto o componente.</div>
+        </section>
+
+        <section class="card" id="paginacion">
+          <span class="label">Consultas 4–7</span><h2>Paginación, orden y resultados vacíos</h2>
+          <p><strong>Propuesta común:</strong> <code>limit</code> predeterminado <code>50</code>, máximo <code>200</code>; valores fuera de rango se rechazan con <code>400 invalid_pagination</code>. Orden determinista por ID canónico para listas de proyectos/componentes y reglas de historial para despliegues. <code>cursor</code> opaco continúa la misma consulta; no se combina con offsets. Su forma concreta es interna al servicio.</p>
+          <div class="table-wrap"><table><thead><tr><th>Situación</th><th>Respuesta propuesta</th></tr></thead><tbody><tr><td>Padre existente sin elementos</td><td><code>200</code> con <code>"items": []</code> y <code>next_cursor: null</code>.</td></tr><tr><td>Componente creado o completado solo por setup</td><td>Se lista como componente, con <code>current_deployments: []</code>; su historial y consultas de despliegues permanecen vacíos hasta registrar un deployment.</td></tr><tr><td>Repartición, proyecto o componente no encontrado</td><td><code>404 not_found</code>, no lista vacía; distingue “no existe” de “existe sin hijos”.</td></tr><tr><td>CUIL válido sin despliegues asociados</td><td><code>200</code> con lista vacía; los setup no cuentan como despliegues.</td></tr><tr><td>CUIL mal formado</td><td><code>400 invalid_cuil</code>.</td></tr><tr><td>Ambiente de filtro desconocido</td><td><code>400 invalid_environment</code>.</td></tr></tbody></table></div>
+        </section>
+
+        <section class="card" id="privacidad">
+          <span class="label">Salvaguardas</span><h2>Privacidad y seguridad</h2>
+           <ul><li>Limitar consultas por CUIL a roles y casos de uso aprobados; aplicar mínimo privilegio y registrar accesos conforme a política institucional.</li><li>Evitar CUIL y <code>actor.username</code> en logs, trazas, analítica, errores, métricas y URLs persistidas cuando no sea imprescindible. Si la query string es inevitable, configurar redacción en gateways, proxies y observabilidad.</li><li>Tratar <code>actor.username</code> y <code>despliegue.ejecutado_por_texto</code> como datos personales o identificadores de cuenta: limitar acceso, retención y exposición en respuestas al propósito autorizado.</li><li>Restringir los datos personales en la sincronización directa a InvGate a lo estrictamente requerido. Catálogo e InvGate deben acordar finalidad, acceso, retención y responsabilidades de cada sistema; no hay un receptor propio que asuma esas obligaciones.</li><li><code>result_summary</code> debe limitarse a la etapa fallida y el detalle técnico útil; no incluir secretos, tokens, credenciales ni logs completos. Se conserva en el Catálogo para el historial y nunca se envía a InvGate.</li><li><code>git_repository_url</code> no debe incluir nombres de usuario, tokens ni credenciales.</li><li>La autenticación y autorización entre OpenShift y Catálogo, y los permisos de la integración directa del Catálogo con la instancia de InvGate, requieren validación y decisión de seguridad/operación. Este documento no define credenciales ni mecanismos.</li><li>No incluir tokens, secretos, datos reales de personas ni URLs internas sensibles en ejemplos o documentación compartida.</li></ul>
+        </section>
+
+        <section class="card" id="pendientes">
+          <span class="label">Para cerrar en revisión</span><h2>Decisiones pendientes</h2>
+          <ol class="pending-list">
+                <li><strong>Identificadores y resolución R3.</strong> Confirmar el formato y ciclo de vida de <code>platform_project_id</code> para R1, además del identificador de clúster. Confirmar que <code>component.component_id</code>, identificador estable aportado por OCP o DevHub y almacenado en <code>componente.gitlab_repositorio_id</code>, conserva unicidad y estabilidad; R3 de OCP o DevHub lo combina con <code>deployment.environment</code>.</li>
+            <li><strong>Revisión de rutas.</strong> Definir quién atiende las rutas R1/R2 sin coincidencia en <code>organigrama.ruta_completa</code>, el canal de corrección y la trazabilidad de la marca de revisión. Esa revisión no bloquea la persistencia del evento ni habilita la creación automática de organigrama.</li>
+            <li><strong>Campos del contrato.</strong> Revisar campos propuestos, obligatoriedad y significado con la persona responsable de esta definición. Solo una duda concreta sobre un dato de origen requiere consultar su disponibilidad; no se necesita una confirmación general de campos por parte de OpenShift.</li>
+               <li><strong>Identidad y nombres.</strong> Acordar clave canónica, alias, normalización y actualización de nombres/URL de repositorio ante cambios de origen; resolver reasignaciones o colisiones de <code>platform_project_id</code> y <code>component.component_id</code> en R1. Confirmar la semántica de <code>deployment.space</code> como detalle o validación opcional del namespace de origen, sin convertirlo en un ID del Catálogo.</li>
+            <li><strong>Seguridad.</strong> Acordar autenticación/autorización entre OpenShift y Catálogo, y validar los permisos de la integración directa del Catálogo con la instancia de InvGate; definir roles para consultas por CUIL, auditoría y retención.</li>
+            <li><strong>InvGate y ticket.</strong> Validar en la instancia las operaciones oficiales para mantener opciones de árbol/lista, los campos personalizados disponibles y si una referencia solo puede actualizar un ticket ya creado. Definir sistema/formato de ID y responsable de resolver referencias inválidas. No asumir creación automática.</li>
+            <li><strong>Sincronización.</strong> Definir qué resultados de las operaciones oficiales disparan retry, por cuánto tiempo y la ruta de atención de fallos persistentes; diseñar idempotencia según las capacidades validadas de la instancia.</li>
+            <li><strong>URLs y Git.</strong> Definir validación de esquema/host, cambios de URL por ambiente y cómo completar/corregir repositorio si falta en el evento operativo.</li>
+            <li><strong>Paginación.</strong> Aprobar valores predeterminados/máximos y estabilidad de cursores frente a cambios concurrentes.</li>
+          </ol>
+        </section>
+
+        <section class="card" id="alcance">
+          <span class="label">Cierre de revisión</span><h2>Fuera de alcance y siguiente paso</h2>
+          <ul><li>No se define CRUD del backoffice ni API de administración del catálogo.</li><li>No se define configuración, código, infraestructura, despliegue ni operación técnica de los servicios.</li><li>Ningún endpoint se presenta como disponible o implementado; no se afirma integración activa con OpenShift o InvGate.</li><li>La integración propuesta consume directamente la API oficial de InvGate Service Desk. No contempla receptor, endpoint ni desarrollo personalizado del lado de InvGate.</li><li>R1 y R3 usan el mismo identificador de componente aportado por el origen para OCP o DevHub; este documento no define diferencias de operación o autenticación entre esos emisores.</li><li>Esta etapa no genera PDF/Word; la fuente revisable sigue siendo el Markdown. La exportación queda para después de la revisión.</li></ul>
+          <div class="callout"><strong>Siguiente paso:</strong> revisar con la persona responsable del Catálogo y cerrar los campos y correspondencias que define nuestro equipo. Luego validar en la instancia de InvGate las operaciones oficiales, los campos personalizados y los permisos necesarios, y resolver las decisiones de seguridad y operación antes de considerarlo acordado.</div>
+          <p class="footnote">Documento de propuesta para análisis colaborativo. Los ejemplos usan valores sintéticos y no representan sistemas, endpoints o personas reales.</p>
+          <p><a href="#contenido">Volver al inicio ↑</a></p>
+        </section>
+      </article>
+    </main>
+  </div>
+</body>
+</html>
