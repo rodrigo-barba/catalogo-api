@@ -5,6 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
+import app.models  # noqa: F401 - import mapped models before exposing metadata to Alembic
 from app.core.config import get_settings
 from app.db import configure_alembic_url
 from app.models.base import Base

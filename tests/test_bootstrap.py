@@ -1,5 +1,6 @@
 from alembic.config import Config
 
+import app.models
 from app.core.config import Settings
 from app.db import configure_alembic_url, create_engine_from_settings
 from app.models.base import Base
@@ -31,4 +32,13 @@ def test_alembic_receives_url_from_application_settings() -> None:
     configure_alembic_url(config, Settings(database_url=database_url))
 
     assert config.get_main_option("sqlalchemy.url") == database_url
-    assert Base.metadata.tables == {}
+    assert set(Base.metadata.tables) == {
+        "organigrama",
+        "proyecto",
+            "componente",
+            "componente_entorno",
+            "entorno",
+            "registro_integracion",
+        "setup_evento",
+        "sincronizacion_outbox",
+    }
