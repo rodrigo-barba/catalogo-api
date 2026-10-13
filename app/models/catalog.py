@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint, text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -91,6 +91,9 @@ class RegistroIntegracion(Base):
     sincronizacion_outbox: Mapped[SincronizacionOutbox | None] = relationship(
         back_populates="registro_integracion"
     )
+    despliegue_evento: Mapped[DespliegueEvento | None] = relationship(
+        back_populates="registro_integracion"
+    )
 
 
 class Entorno(Base):
@@ -145,4 +148,95 @@ class SincronizacionOutbox(Base):
 
     registro_integracion: Mapped[RegistroIntegracion] = relationship(
         back_populates="sincronizacion_outbox"
+    )
+
+
+class Persona(Base):
+    __tablename__ = "persona"
+
+    id: Mapped[int] = mapped_column(ID_TYPE, primary_key=True)
+    usuario_ad: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cuil: Mapped[str | None] = mapped_column(String(11), nullable=True)
+    nombre: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    apellido: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    activo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("1"),
+    )
+
+
+class ComponenteVersion(Base):
+    __tablename__ = "componente_version"
+    __table_args__ = (UniqueConstraint("componente_id", "tag", name="uq_componente_version_1"),)
+
+    id: Mapped[int] = mapped_column(ID_TYPE, primary_key=True)
+    componente_id: Mapped[int] = mapped_column(ForeignKey("componente.id"), nullable=False)
+    tag: Mapped[str] = mapped_column(String(100), nullable=False)
+    commit_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    fecha_primer_despliegue: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+
+
+class Despliegue(Base):
+    __tablename__ = "despliegue"
+    __table_args__ = (
+        UniqueConstraint("registro_id", name="uq_despliegue_1"),
+        UniqueConstraint("herramienta_origen", "referencia_ejecucion", name="uq_despliegue_2"),
+    )
+
+    id: Mapped[int] = mapped_column(ID_TYPE, primary_key=True)
+    componente_entorno_id: Mapped[int] = mapped_column(
+        ForeignKey("componente_entorno.id"),
+        nullable=False,
+    )
+    componente_version_id: Mapped[int] = mapped_column(
+        ForeignKey("componente_version.id"),
+        nullable=False,
+    )
+    resultado: Mapped[str] = mapped_column(String(10), nullable=False)
+    herramienta_origen: Mapped[str] = mapped_column(String(10), nullable=False)
+    nro_ticket_invgate: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    espacio: Mapped[str] = mapped_column(String(200), nullable=False)
+    commit_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    referencia_ejecucion: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    ejecutado_por_persona_id: Mapped[int | None] = mapped_column(
+        ForeignKey("persona.id"),
+        nullable=True,
+    )
+    ejecutado_por_texto: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    fecha_inicio: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    fecha_fin: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    mensaje_resultado: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registro_id: Mapped[int] = mapped_column(ForeignKey("registro_integracion.id"), nullable=False)
+
+
+class DespliegueEvento(Base):
+    __tablename__ = "despliegue_evento"
+    __table_args__ = (
+        UniqueConstraint(
+            "registro_integracion_id",
+            name="uq_despliegue_evento_registro_integracion",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(ID_TYPE, primary_key=True)
+    registro_integracion_id: Mapped[int] = mapped_column(
+        ForeignKey("registro_integracion.id"),
+        nullable=False,
+    )
+    hash_semantico: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    evidencia_canonica: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    actor_cuil: Mapped[str] = mapped_column(String(11), nullable=False)
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+
+    registro_integracion: Mapped[RegistroIntegracion] = relationship(
+        back_populates="despliegue_evento"
     )

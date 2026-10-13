@@ -41,4 +41,8 @@ def test_alembic_receives_url_from_application_settings() -> None:
             "registro_integracion",
         "setup_evento",
         "sincronizacion_outbox",
+        "persona",
+        "componente_version",
+        "despliegue",
+        "despliegue_evento",
     }
