@@ -33,12 +33,15 @@ def test_alembic_receives_url_from_application_settings() -> None:
 
     assert config.get_main_option("sqlalchemy.url") == database_url
     assert set(Base.metadata.tables) == {
+        "acceso_devhub",
+        "acceso_devhub_evento",
+        "acceso_devhub_usuario",
         "organigrama",
         "proyecto",
-            "componente",
-            "componente_entorno",
-            "entorno",
-            "registro_integracion",
+        "componente",
+        "componente_entorno",
+        "entorno",
+        "registro_integracion",
         "setup_evento",
         "sincronizacion_outbox",
         "persona",

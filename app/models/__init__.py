@@ -1,4 +1,7 @@
 from app.models.catalog import (
+    AccesoDevhub,
+    AccesoDevhubEvento,
+    AccesoDevhubUsuario,
     Componente,
     ComponenteEntorno,
     ComponenteVersion,
@@ -13,6 +16,9 @@ from app.models.catalog import (
 )
 
 __all__ = [
+    "AccesoDevhub",
+    "AccesoDevhubEvento",
+    "AccesoDevhubUsuario",
     "Componente",
     "ComponenteEntorno",
     "ComponenteVersion",

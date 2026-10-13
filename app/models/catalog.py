@@ -94,6 +94,10 @@ class RegistroIntegracion(Base):
     despliegue_evento: Mapped[DespliegueEvento | None] = relationship(
         back_populates="registro_integracion"
     )
+    acceso_devhub: Mapped[AccesoDevhub | None] = relationship(back_populates="registro_integracion")
+    acceso_devhub_evento: Mapped[AccesoDevhubEvento | None] = relationship(
+        back_populates="registro_integracion"
+    )
 
 
 class Entorno(Base):
@@ -163,6 +167,72 @@ class Persona(Base):
         Boolean,
         nullable=False,
         server_default=text("1"),
+    )
+    accesos_solicitados: Mapped[list[AccesoDevhub]] = relationship(
+        back_populates="solicitante"
+    )
+    accesos_devhub_usuario: Mapped[list[AccesoDevhubUsuario]] = relationship(
+        back_populates="persona"
+    )
+
+
+class AccesoDevhub(Base):
+    __tablename__ = "acceso_devhub"
+
+    id: Mapped[int] = mapped_column(ID_TYPE, primary_key=True)
+    ruta_organigrama: Mapped[str] = mapped_column(String(700), nullable=False)
+    organigrama_id: Mapped[int | None] = mapped_column(ForeignKey("organigrama.id"), nullable=True)
+    dg_solicitante_persona_id: Mapped[int | None] = mapped_column(ForeignKey("persona.id"), nullable=True)
+    nro_ticket_invgate: Mapped[str] = mapped_column(String(30), nullable=False)
+    fecha_habilitacion: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    estado: Mapped[str] = mapped_column(String(10), nullable=False, server_default=text("'ACTIVO'"))
+    registro_id: Mapped[int] = mapped_column(ForeignKey("registro_integracion.id"), nullable=False)
+    ruta_requiere_revision: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("0"),
+    )
+
+    organigrama: Mapped[Organigrama | None] = relationship()
+    solicitante: Mapped[Persona | None] = relationship(back_populates="accesos_solicitados")
+    registro_integracion: Mapped[RegistroIntegracion] = relationship(back_populates="acceso_devhub")
+    usuarios: Mapped[list[AccesoDevhubUsuario]] = relationship(back_populates="acceso_devhub")
+
+
+class AccesoDevhubUsuario(Base):
+    __tablename__ = "acceso_devhub_usuario"
+
+    acceso_devhub_id: Mapped[int] = mapped_column(ForeignKey("acceso_devhub.id"), primary_key=True)
+    persona_id: Mapped[int] = mapped_column(ForeignKey("persona.id"), primary_key=True)
+
+    acceso_devhub: Mapped[AccesoDevhub] = relationship(back_populates="usuarios")
+    persona: Mapped[Persona] = relationship(back_populates="accesos_devhub_usuario")
+
+
+class AccesoDevhubEvento(Base):
+    __tablename__ = "acceso_devhub_evento"
+    __table_args__ = (
+        UniqueConstraint(
+            "registro_integracion_id",
+            name="uq_acceso_devhub_evento_registro_integracion",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(ID_TYPE, primary_key=True)
+    registro_integracion_id: Mapped[int] = mapped_column(
+        ForeignKey("registro_integracion.id"),
+        nullable=False,
+    )
+    hash_semantico: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    evidencia_canonica: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+
+    registro_integracion: Mapped[RegistroIntegracion] = relationship(
+        back_populates="acceso_devhub_evento"
     )
 
 
