@@ -17,6 +17,15 @@ def build_session() -> Session:
     return Session(engine)
 
 
+def successful_payload(event_id: str, finished_at: str, *, tag: str) -> dict:
+    payload = valid_success_payload()
+    payload["event_id"] = event_id
+    payload["started_at"] = "2026-10-06T13:00:00Z"
+    payload["finished_at"] = finished_at
+    payload["deployment"]["tag"] = tag
+    return payload
+
+
 def seed_catalog(
     session: Session,
     *,
@@ -315,3 +324,105 @@ def test_acceptance_never_opens_an_invgate_connection(monkeypatch) -> None:
 
     accept_deployment(session, DeploymentRequest.model_validate(valid_success_payload()))
     session.commit()
+
+
+def test_older_success_is_history_only_and_never_regresses_pointers() -> None:
+    from app.models.catalog import ComponenteEntorno, ComponenteVersion, Despliegue, DespliegueEvento, SincronizacionOutbox
+    from app.schemas.deployment import DeploymentRequest
+    from app.services.deployment_acceptance import accept_deployment
+
+    session = build_session()
+    seed_catalog(session)
+    session.commit()
+
+    newer = accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-newer", "2026-10-06T15:00:00Z", tag="3.0.0")),
+    )
+    session.commit()
+    component_environment = session.scalar(select(ComponenteEntorno))
+    version_before = component_environment.version_vigente_id
+
+    older = accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-older", "2026-10-06T14:00:00Z", tag="2.0.0")),
+    )
+    session.commit()
+
+    component_environment = session.scalar(select(ComponenteEntorno))
+    assert older.idempotent_replay is False
+    assert component_environment.despliegue_vigente_id == newer.deployment_id
+    assert component_environment.version_vigente_id == version_before
+    older_row = session.get(Despliegue, older.deployment_id)
+    assert older_row is not None
+    assert older_row.resultado == "EXITOSO"
+    assert count(session, Despliegue) == 2
+    assert count(session, DespliegueEvento) == 2
+    assert count(session, SincronizacionOutbox) == 2
+    assert count(session, ComponenteVersion) == 2
+
+
+def test_newer_success_advances_the_pointer_to_the_latest_attempt() -> None:
+    from app.models.catalog import ComponenteEntorno, ComponenteVersion, Despliegue
+    from app.schemas.deployment import DeploymentRequest
+    from app.services.deployment_acceptance import accept_deployment
+
+    session = build_session()
+    seed_catalog(session)
+    session.commit()
+
+    first = accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-first", "2026-10-06T14:00:00Z", tag="1.0.0")),
+    )
+    session.commit()
+    second = accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-second", "2026-10-06T15:00:00Z", tag="2.0.0")),
+    )
+    session.commit()
+
+    component_environment = session.scalar(select(ComponenteEntorno))
+    second_version = session.scalar(
+        select(ComponenteVersion).where(ComponenteVersion.tag == "2.0.0")
+    )
+    second_deployment = session.get(Despliegue, second.deployment_id)
+    assert second_deployment is not None
+    assert component_environment.despliegue_vigente_id == second.deployment_id
+    assert component_environment.version_vigente_id == second_version.id
+    assert component_environment.despliegue_vigente_id != first.deployment_id
+
+
+def test_equal_finished_at_breaks_pointer_ties_on_event_id() -> None:
+    from app.models.catalog import ComponenteEntorno
+    from app.schemas.deployment import DeploymentRequest
+    from app.services.deployment_acceptance import accept_deployment
+
+    session = build_session()
+    seed_catalog(session)
+    session.commit()
+
+    accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-a", "2026-10-06T15:00:00Z", tag="1.0.0")),
+    )
+    session.commit()
+    component_environment = session.scalar(select(ComponenteEntorno))
+    winner = component_environment.despliegue_vigente_id
+
+    earlier_tie = accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-0", "2026-10-06T15:00:00Z", tag="2.0.0")),
+    )
+    session.commit()
+    component_environment = session.scalar(select(ComponenteEntorno))
+    assert component_environment.despliegue_vigente_id == winner
+    assert earlier_tie.deployment_id != winner
+
+    later_tie = accept_deployment(
+        session,
+        DeploymentRequest.model_validate(successful_payload("evt-b", "2026-10-06T15:00:00Z", tag="3.0.0")),
+    )
+    session.commit()
+    component_environment = session.scalar(select(ComponenteEntorno))
+    assert component_environment.despliegue_vigente_id == later_tie.deployment_id

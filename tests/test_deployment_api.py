@@ -337,3 +337,46 @@ def test_persistence_failure_returns_retryable_503_without_partial_writes(monkey
     assert persisted_deployment_counts(engine) == EMPTY_DEPLOYMENT_COUNTS
     with Session(engine) as session:
         assert session.scalar(select(func.count()).select_from(Entorno)) == 1
+
+
+def test_identical_replay_returns_200_with_the_original_recorded_at() -> None:
+    test_client, engine = client_with_engine()
+
+    created = test_client.post("/api/v1/deployments", json=valid_success_payload())
+    replay = test_client.post("/api/v1/deployments", json=valid_success_payload())
+
+    assert created.status_code == 201
+    assert replay.status_code == 200
+    body = replay.json()
+    assert body["idempotent_replay"] is True
+    assert body["deployment_id"] == created.json()["deployment_id"]
+    assert body["recorded_at"] == created.json()["recorded_at"]
+    assert body["event_id"] == "ocp-deployment-01J8EXAMPLE000001"
+    assert persisted_deployment_counts(engine) == {
+        "deployments": 1,
+        "deployment_events": 1,
+        "versions": 1,
+        "outbox": 1,
+        "r3_events": 1,
+    }
+
+
+def test_reused_event_id_with_changed_content_returns_409_without_new_rows() -> None:
+    test_client, engine = client_with_engine()
+    assert test_client.post("/api/v1/deployments", json=valid_success_payload()).status_code == 201
+
+    changed = valid_success_payload()
+    changed["deployment"]["tag"] = "2.4.9"
+
+    response = test_client.post("/api/v1/deployments", json=changed)
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "event_id_reused"
+    assert response.json()["error"]["retryable"] is False
+    assert persisted_deployment_counts(engine) == {
+        "deployments": 1,
+        "deployment_events": 1,
+        "versions": 1,
+        "outbox": 1,
+        "r3_events": 1,
+    }

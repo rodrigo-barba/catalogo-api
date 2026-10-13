@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from pymysql.constants import CLIENT
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, select, text
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -190,5 +191,159 @@ def test_r1_creates_no_persona_or_deployment_state(mariadb_database: URL) -> Non
         assert persona_count == 0
         assert deployment_count == 0
         assert current_state == (None, None)
+    finally:
+        engine.dispose()
+
+
+def seed_r3_component(engine, repositorio_id: str, *, nombre_normalizado: str) -> None:
+    """Seed the pre-existing component/entorno that R3 resolves (R3 never creates)."""
+
+    from app.models.catalog import (
+        Componente,
+        ComponenteEntorno,
+        Entorno,
+        Proyecto,
+        RegistroIntegracion,
+    )
+
+    with Session(engine) as session:
+        seed = RegistroIntegracion(
+            tipo_registro="CARGA_INICIAL",
+            herramienta_origen="CATALOGO",
+            fecha_evento=datetime.now(UTC),
+            payload={},
+        )
+        session.add(seed)
+        session.flush()
+        entorno = session.scalar(select(Entorno).where(Entorno.codigo == "DEV"))
+        assert entorno is not None
+        project = Proyecto(
+            registro_alta_id=seed.id,
+            nombre=nombre_normalizado,
+            nombre_normalizado=nombre_normalizado,
+            plataforma="OCP",
+            ruta_organigrama="dgisis",
+        )
+        session.add(project)
+        session.flush()
+        component = Componente(
+            proyecto_id=project.id,
+            gitlab_repositorio_id=repositorio_id,
+            nombre="R3 Race",
+            nombre_normalizado=nombre_normalizado,
+            registro_alta_id=seed.id,
+        )
+        session.add(component)
+        session.flush()
+        session.add(
+            ComponenteEntorno(
+                componente_id=component.id,
+                entorno_id=entorno.id,
+                espacio="r3-race-dev",
+                registro_alta_id=seed.id,
+            )
+        )
+        session.commit()
+
+
+def test_concurrent_same_deployment_event_creates_one_durable_record(mariadb_database: URL) -> None:
+    from app.schemas.deployment import DeploymentRequest
+    from app.services.deployment_acceptance import accept_deployment
+    from tests.test_deployment_schemas import valid_success_payload
+
+    repositorio_id = "dgisis/r3-race-same-event"
+    engine = create_engine(mariadb_database, isolation_level="READ COMMITTED")
+    seed_r3_component(engine, repositorio_id, nombre_normalizado="r3-race-same-event")
+    payload = valid_success_payload()
+    payload["component"]["component_id"] = repositorio_id
+    request = DeploymentRequest.model_validate(payload)
+
+    def submit() -> str:
+        with Session(engine) as session:
+            accepted = accept_deployment(session, request)
+            session.commit()
+            return "replay" if accepted.idempotent_replay else "created"
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(lambda _: submit(), range(2)))
+        with engine.connect() as connection:
+            event_count = connection.scalar(
+                text("SELECT COUNT(*) FROM registro_integracion WHERE id_evento_origen = :event_id"),
+                {"event_id": payload["event_id"]},
+            )
+            deployment_count = connection.scalar(
+                text(
+                    "SELECT COUNT(*) FROM despliegue d "
+                    "JOIN componente_entorno ce ON ce.id = d.componente_entorno_id "
+                    "JOIN componente c ON c.id = ce.componente_id "
+                    "WHERE c.gitlab_repositorio_id = :repositorio_id"
+                ),
+                {"repositorio_id": repositorio_id},
+            )
+            evidence_count = connection.scalar(
+                text(
+                    "SELECT COUNT(*) FROM despliegue_evento e "
+                    "JOIN registro_integracion r ON r.id = e.registro_integracion_id "
+                    "WHERE r.id_evento_origen = :event_id"
+                ),
+                {"event_id": payload["event_id"]},
+            )
+            outbox_count = connection.scalar(
+                text(
+                    "SELECT COUNT(*) FROM sincronizacion_outbox o "
+                    "JOIN registro_integracion r ON r.id = o.registro_integracion_id "
+                    "WHERE r.id_evento_origen = :event_id"
+                ),
+                {"event_id": payload["event_id"]},
+            )
+        assert sorted(outcomes) == ["created", "replay"]
+        assert event_count == 1
+        assert deployment_count == 1
+        assert evidence_count == 1
+        assert outbox_count == 1
+    finally:
+        engine.dispose()
+
+
+def test_concurrent_deployments_share_one_component_version_per_tag(mariadb_database: URL) -> None:
+    from app.models.catalog import Componente, ComponenteVersion
+    from app.schemas.deployment import DeploymentRequest
+    from app.services.deployment_acceptance import accept_deployment
+    from tests.test_deployment_schemas import valid_success_payload
+
+    repositorio_id = "dgisis/r3-race-same-tag"
+    engine = create_engine(mariadb_database, isolation_level="READ COMMITTED")
+    seed_r3_component(engine, repositorio_id, nombre_normalizado="r3-race-same-tag")
+
+    first_payload = valid_success_payload()
+    first_payload["component"]["component_id"] = repositorio_id
+    first_payload["event_id"] = "ocp-deployment-r3-race-tag-001"
+    second_payload = valid_success_payload()
+    second_payload["component"]["component_id"] = repositorio_id
+    second_payload["event_id"] = "ocp-deployment-r3-race-tag-002"
+    requests = [
+        DeploymentRequest.model_validate(first_payload),
+        DeploymentRequest.model_validate(second_payload),
+    ]
+
+    def submit(request: DeploymentRequest) -> str:
+        with Session(engine) as session:
+            accepted = accept_deployment(session, request)
+            session.commit()
+            return "replay" if accepted.idempotent_replay else "created"
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(submit, requests))
+        with Session(engine) as session:
+            component = session.scalar(
+                select(Componente).where(Componente.gitlab_repositorio_id == repositorio_id)
+            )
+            versions = session.scalars(
+                select(ComponenteVersion).where(ComponenteVersion.componente_id == component.id)
+            ).all()
+        assert sorted(outcomes) == ["created", "created"]
+        assert [version.tag for version in versions] == ["2.4.1"]
     finally:
         engine.dispose()
