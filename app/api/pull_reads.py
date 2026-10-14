@@ -3,7 +3,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_session
-from app.services.pull_reads import DEFAULT_LIMIT, InvalidPagination, list_projects, project_components
+from app.services.pull_reads import (
+    DEFAULT_LIMIT,
+    InvalidPagination,
+    current_devhub_accesses,
+    list_component_setups,
+    list_devhub_accesses,
+    list_projects,
+    project_components,
+)
 
 
 router = APIRouter(prefix="/api/v1", tags=["pull-reads"])
@@ -45,3 +53,44 @@ def get_project_components(
     if components is None:
         return error_response("not_found", 404)
     return {"items": components, "next_cursor": None}
+
+
+@router.get("/devhub-accesses/current", response_model=None)
+def get_current_devhub_accesses(
+    repartition_route: str,
+    session: Session = Depends(get_session),
+) -> dict[str, object]:
+    return current_devhub_accesses(session, repartition_route=repartition_route)
+
+
+@router.get("/devhub-accesses", response_model=None)
+def get_devhub_accesses(
+    repartition_route: str,
+    limit: int = DEFAULT_LIMIT,
+    cursor: str | None = None,
+    offset: str | None = Query(default=None),
+    session: Session = Depends(get_session),
+) -> dict[str, object] | JSONResponse:
+    try:
+        return list_devhub_accesses(
+            session, repartition_route=repartition_route, limit=limit, cursor=cursor, offset=offset
+        )
+    except InvalidPagination:
+        return error_response("invalid_pagination", 400)
+
+
+@router.get("/components/{component_id}/setups", response_model=None)
+def get_component_setups(
+    component_id: int,
+    limit: int = DEFAULT_LIMIT,
+    cursor: str | None = None,
+    offset: str | None = Query(default=None),
+    session: Session = Depends(get_session),
+) -> dict[str, object] | JSONResponse:
+    try:
+        setups = list_component_setups(session, component_id=component_id, limit=limit, cursor=cursor, offset=offset)
+    except InvalidPagination:
+        return error_response("invalid_pagination", 400)
+    if setups is None:
+        return error_response("not_found", 404)
+    return setups

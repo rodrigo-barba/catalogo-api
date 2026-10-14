@@ -6,7 +6,17 @@ from sqlalchemy.pool import StaticPool
 from app.db import get_session
 from app.main import app
 from app.models.base import Base
-from app.models.catalog import Despliegue, Entorno, Proyecto, SincronizacionOutbox
+from app.models.catalog import (
+    AccesoDevhub,
+    Despliegue,
+    Entorno,
+    Persona,
+    Proyecto,
+    RegistroIntegracion,
+    SetupEvento,
+    SincronizacionOutbox,
+)
+from tests.test_devhub_access_schemas import valid_payload as valid_devhub_payload
 from tests.test_deployment_schemas import valid_failure_payload, valid_success_payload
 from tests.test_setup_schemas import valid_payload
 
@@ -51,6 +61,17 @@ def create_setup(
     payload["project"]["platform_project_id"] = platform_project_id
     payload["project"]["name"] = platform_project_id
     response = client.post("/api/v1/setups", json=payload)
+    assert response.status_code == 201
+    return response.json()
+
+
+def create_devhub_access(client: TestClient, *, event_id: str, route: str = "/JGM/DGISIS") -> dict[str, object]:
+    payload = valid_devhub_payload()
+    payload["event_id"] = event_id
+    payload["repartition"]["route"] = route
+    payload["requested_by"] = {"cuil": "20123456789"}
+    payload["authorized_users"] = [{"cuil": "27345678901"}, {"cuil": "20456789012"}]
+    response = client.post("/api/v1/devhub-accesses", json=payload)
     assert response.status_code == 201
     return response.json()
 
@@ -150,22 +171,141 @@ def test_hierarchy_missing_project_is_404_and_components_show_only_current_succe
     assert deployment["finished_at"] == "2026-10-06T14:25:30"
 
 
-def test_shared_gets_preserve_rows_and_outbox() -> None:
+def test_all_gets_preserve_rows_and_outbox() -> None:
     client, engine = client_with_engine()
     setup = create_setup(client, event_id="pull-setup-1")
+    create_devhub_access(client, event_id="pull-devhub-1")
     with Session(engine) as session:
         before = {
             "projects": session.scalar(select(func.count()).select_from(Proyecto)),
             "deployments": session.scalar(select(func.count()).select_from(Despliegue)),
+            "accesses": session.scalar(select(func.count()).select_from(AccesoDevhub)),
+            "setup_events": session.scalar(select(func.count()).select_from(SetupEvento)),
+            "people": session.scalar(select(func.count()).select_from(Persona)),
             "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
         }
 
     assert client.get("/api/v1/projects", params={"repartition_route": "/JGM/DGISIS"}).status_code == 200
     assert client.get(f"/api/v1/projects/{setup['project']['project_id']}/components").status_code == 200
+    assert client.get("/api/v1/devhub-accesses/current", params={"repartition_route": "/JGM/DGISIS"}).status_code == 200
+    assert client.get("/api/v1/devhub-accesses", params={"repartition_route": "/JGM/DGISIS"}).status_code == 200
+    assert client.get(f"/api/v1/components/{setup['component']['component_id']}/setups").status_code == 200
 
     with Session(engine) as session:
         assert {
             "projects": session.scalar(select(func.count()).select_from(Proyecto)),
             "deployments": session.scalar(select(func.count()).select_from(Despliegue)),
+            "accesses": session.scalar(select(func.count()).select_from(AccesoDevhub)),
+            "setup_events": session.scalar(select(func.count()).select_from(SetupEvento)),
+            "people": session.scalar(select(func.count()).select_from(Persona)),
             "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
         } == before
+
+
+def test_devhub_current_returns_all_active_rows_with_distinct_people_and_empty_routes() -> None:
+    client, engine = client_with_engine()
+    first = create_devhub_access(client, event_id="devhub-pull-1")
+    second = create_devhub_access(client, event_id="devhub-pull-2", route="JGM/DGISIS")
+    with Session(engine) as session:
+        session.add(AccesoDevhub(
+            ruta_organigrama="/JGM/DGISIS",
+            nro_ticket_invgate="INC-INACTIVE",
+            fecha_habilitacion=session.get(AccesoDevhub, first["devhub_access_id"]).fecha_habilitacion,
+            estado="INACTIVO",
+            registro_id=session.scalar(select(RegistroIntegracion.id).order_by(RegistroIntegracion.id)),
+            ruta_requiere_revision=True,
+        ))
+        session.commit()
+
+    current = client.get("/api/v1/devhub-accesses/current", params={"repartition_route": "JGM/DGISIS"})
+    empty = client.get("/api/v1/devhub-accesses/current", params={"repartition_route": "/JGM/OTHER"})
+
+    assert current.status_code == 200
+    assert [item["access_id"] for item in current.json()["items"]] == [first["devhub_access_id"], second["devhub_access_id"]]
+    assert current.json()["items"][0] == {
+        "access_id": first["devhub_access_id"],
+        "event_id": "devhub-pull-1",
+        "enabled_at": current.json()["items"][0]["enabled_at"],
+        "ticket_id": "INC-1042",
+        "repartition": {"route": "/JGM/DGISIS", "organigrama_id": None, "review_required": True},
+        "requested_by": {"person_id": 1, "cuil": "20123456789"},
+        "authorized_users": [{"person_id": 2, "cuil": "20456789012"}, {"person_id": 3, "cuil": "27345678901"}],
+    }
+    assert empty.json() == {"items": [], "next_cursor": None}
+
+
+def test_devhub_history_uses_stable_keyset_pagination_and_gets_do_not_mutate() -> None:
+    client, engine = client_with_engine()
+    first = create_devhub_access(client, event_id="devhub-history-1")
+    create_devhub_access(client, event_id="devhub-history-2")
+    with Session(engine) as session:
+        before = {
+            "accesses": session.scalar(select(func.count()).select_from(AccesoDevhub)),
+            "people": session.scalar(select(func.count()).select_from(Persona)),
+            "setup_events": session.scalar(select(func.count()).select_from(SetupEvento)),
+            "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
+        }
+
+    page_one = client.get("/api/v1/devhub-accesses", params={"repartition_route": "/JGM/DGISIS", "limit": 1})
+    create_devhub_access(client, event_id="devhub-history-later")
+    page_two = client.get("/api/v1/devhub-accesses", params={"repartition_route": "/JGM/DGISIS", "cursor": page_one.json()["next_cursor"]})
+
+    assert page_one.status_code == 200
+    assert page_one.json()["items"][0]["access_id"] == first["devhub_access_id"]
+    assert page_one.json()["items"][0]["requested_by"]["cuil"] == "20123456789"
+    assert page_one.json()["items"][0]["authorized_users"][0]["cuil"] == "20456789012"
+    assert [item["event_id"] for item in page_two.json()["items"]] == ["devhub-history-2"]
+    with Session(engine) as session:
+        assert {
+            "accesses": session.scalar(select(func.count()).select_from(AccesoDevhub)),
+            "people": session.scalar(select(func.count()).select_from(Persona)),
+            "setup_events": session.scalar(select(func.count()).select_from(SetupEvento)),
+            "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
+        } == {**before, "accesses": before["accesses"] + 1}
+
+
+def test_setup_history_paginates_persisted_evidence_and_missing_component_is_404() -> None:
+    client, engine = client_with_engine()
+    first = create_setup(client, event_id="setup-history-1")
+    component_id = first["component"]["component_id"]
+    with Session(engine) as session:
+        event = RegistroIntegracion(
+            id_evento_origen="setup-history-2",
+            tipo_registro="R1_ALTA",
+            herramienta_origen="OCP",
+            nro_ticket_invgate="SET-43",
+            payload={},
+        )
+        session.add(event)
+        session.flush()
+        session.add(SetupEvento(
+            registro_integracion=event,
+            hash_semantico="setup-history-2",
+            evidencia_canonica={"component_id": component_id},
+            actor_cuil="20987654321",
+        ))
+        session.commit()
+
+    history = client.get(f"/api/v1/components/{component_id}/setups", params={"limit": 1})
+    continued = client.get(f"/api/v1/components/{component_id}/setups", params={"cursor": history.json()["next_cursor"]})
+    missing = client.get("/api/v1/components/999/setups")
+
+    assert history.status_code == 200
+    assert history.json()["items"] == [{
+        "setup_event_id": 1,
+        "event_id": "setup-history-1",
+        "ticket_id": "SET-42",
+        "actor": {"cuil": "20123456789"},
+        "recorded_at": history.json()["items"][0]["recorded_at"],
+    }]
+    assert history.json()["next_cursor"]
+    assert continued.json()["items"] == [{
+        "setup_event_id": 2,
+        "event_id": "setup-history-2",
+        "ticket_id": "SET-43",
+        "actor": {"cuil": "20987654321"},
+        "recorded_at": continued.json()["items"][0]["recorded_at"],
+    }]
+    assert continued.json()["next_cursor"] is None
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "not_found"
