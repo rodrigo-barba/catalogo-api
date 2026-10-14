@@ -9,6 +9,7 @@ from app.api.devhub_accesses import r2_validation_error
 from app.api.devhub_accesses import router as devhub_accesses_router
 from app.api.deployments import r3_validation_error
 from app.api.deployments import router as deployments_router
+from app.api.pull_reads import router as pull_reads_router
 from app.api.setups import router as setups_router, validation_details
 
 R3_DEPLOYMENTS_PATH = "/api/v1/deployments"
@@ -17,6 +18,7 @@ app = FastAPI()
 app.include_router(setups_router)
 app.include_router(deployments_router)
 app.include_router(devhub_accesses_router)
+app.include_router(pull_reads_router)
 
 
 @app.exception_handler(RequestValidationError)
