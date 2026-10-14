@@ -5,8 +5,10 @@ from sqlalchemy.orm import Session
 from app.db import get_session
 from app.services.pull_reads import (
     DEFAULT_LIMIT,
+    InvalidEnvironment,
     InvalidPagination,
     current_devhub_accesses,
+    list_component_deployments,
     list_component_setups,
     list_devhub_accesses,
     list_projects,
@@ -94,3 +96,30 @@ def get_component_setups(
     if setups is None:
         return error_response("not_found", 404)
     return setups
+
+
+@router.get("/components/{component_id}/deployments", response_model=None)
+def get_component_deployments(
+    component_id: int,
+    environment: str | None = None,
+    limit: int = DEFAULT_LIMIT,
+    cursor: str | None = None,
+    offset: str | None = Query(default=None),
+    session: Session = Depends(get_session),
+) -> dict[str, object] | JSONResponse:
+    try:
+        deployments = list_component_deployments(
+            session,
+            component_id=component_id,
+            environment=environment,
+            limit=limit,
+            cursor=cursor,
+            offset=offset,
+        )
+    except InvalidEnvironment:
+        return error_response("invalid_environment", 400)
+    except InvalidPagination:
+        return error_response("invalid_pagination", 400)
+    if deployments is None:
+        return error_response("not_found", 404)
+    return deployments

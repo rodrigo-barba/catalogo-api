@@ -309,3 +309,84 @@ def test_setup_history_paginates_persisted_evidence_and_missing_component_is_404
     assert continued.json()["next_cursor"] is None
     assert missing.status_code == 404
     assert missing.json()["error"]["code"] == "not_found"
+
+
+def test_deployments_history_filters_paginates_and_preserves_identity_and_outbox() -> None:
+    client, engine = client_with_engine()
+    setup = create_setup(client, event_id="deployment-history-setup")
+    component_id = setup["component"]["component_id"]
+    empty_component = create_setup(
+        client,
+        event_id="deployment-history-empty-setup",
+        component_id="dgisis/catalog-empty",
+        platform_project_id="platform-empty",
+    )
+    with Session(engine) as session:
+        session.add(Persona(cuil="20123456789", usuario_ad="ocp-pipeline"))
+        session.commit()
+
+    success = valid_success_payload()
+    success["event_id"] = "deployment-history-success"
+    success["component"]["component_id"] = "dgisis/catalog-api"
+    success["finished_at"] = "2026-10-06T14:25:30Z"
+    failed = valid_failure_payload()
+    failed["event_id"] = "deployment-history-failure"
+    failed["component"]["component_id"] = "dgisis/catalog-api"
+    failed["finished_at"] = "2026-10-06T14:26:30Z"
+    assert client.post("/api/v1/deployments", json=success).status_code == 201
+    assert client.post("/api/v1/deployments", json=failed).status_code == 201
+
+    with Session(engine) as session:
+        before = {
+            "deployments": session.scalar(select(func.count()).select_from(Despliegue)),
+            "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
+        }
+
+    first = client.get(f"/api/v1/components/{component_id}/deployments", params={"environment": "dev", "limit": 1})
+    later = valid_success_payload()
+    later["event_id"] = "deployment-history-later"
+    later["component"]["component_id"] = "dgisis/catalog-api"
+    later["finished_at"] = "2026-10-06T14:27:30Z"
+    assert client.post("/api/v1/deployments", json=later).status_code == 201
+    continued = client.get(f"/api/v1/components/{component_id}/deployments", params={"environment": "dev", "cursor": first.json()["next_cursor"]})
+    all_environments = client.get(f"/api/v1/components/{component_id}/deployments")
+    invalid_environment = client.get(f"/api/v1/components/{component_id}/deployments", params={"environment": "staging"})
+    missing = client.get("/api/v1/components/999/deployments")
+    empty = client.get(f"/api/v1/components/{empty_component['component']['component_id']}/deployments")
+
+    assert first.status_code == 200
+    assert first.json()["items"] == [{
+        "deployment_id": 1,
+        "event_id": "deployment-history-success",
+        "component_environment_id": 1,
+        "environment": "DEV",
+        "result": "EXITOSO",
+        "ticket_id": "INC-1042",
+        "tag": "2.4.1",
+        "commit_sha": "9f6b1c4d8e2a7b5f3c1d0e9a8b7c6d5e4f3a2b1c",
+        "result_summary": None,
+        "actor": {"person_id": 1, "cuil": "20123456789", "username": "ocp-pipeline"},
+        "started_at": "2026-10-06T14:24:10",
+        "finished_at": "2026-10-06T14:25:30",
+    }]
+    assert first.json()["next_cursor"]
+    assert continued.status_code == 200
+    assert [item["event_id"] for item in continued.json()["items"]] == ["deployment-history-failure"]
+    assert continued.json()["items"][0]["result"] == "FALLIDO"
+    assert continued.json()["items"][0]["ticket_id"] is None
+    assert continued.json()["items"][0]["result_summary"] == "Image pull failed."
+    assert [item["event_id"] for item in all_environments.json()["items"]] == [
+        "deployment-history-success",
+        "deployment-history-failure",
+        "deployment-history-later",
+    ]
+    assert empty.json() == {"items": [], "next_cursor": None}
+    assert invalid_environment.status_code == 400
+    assert invalid_environment.json()["error"]["code"] == "invalid_environment"
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "not_found"
+    with Session(engine) as session:
+        assert {
+            "deployments": session.scalar(select(func.count()).select_from(Despliegue)),
+            "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
+        } == {"deployments": before["deployments"] + 1, "outbox": before["outbox"] + 1}

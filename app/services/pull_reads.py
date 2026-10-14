@@ -13,7 +13,9 @@ from app.models.catalog import (
     AccesoDevhubUsuario,
     Componente,
     ComponenteEntorno,
+    ComponenteVersion,
     Despliegue,
+    DespliegueEvento,
     Entorno,
     Persona,
     Proyecto,
@@ -31,9 +33,15 @@ _DEVHUB_HISTORY_ENDPOINT = "devhub-accesses"
 _DEVHUB_HISTORY_ORDER = "access_id:asc"
 _SETUPS_ENDPOINT = "components/setups"
 _SETUPS_ORDER = "setup_event_id:asc"
+_DEPLOYMENTS_ENDPOINT = "components/deployments"
+_DEPLOYMENTS_ORDER = "deployment_id:asc"
 
 
 class InvalidPagination(ValueError):
+    pass
+
+
+class InvalidEnvironment(ValueError):
     pass
 
 
@@ -334,5 +342,86 @@ def list_component_setups(
         "items": items,
         "next_cursor": _cursor_for_history(_SETUPS_ENDPOINT, {"component_id": component_id}, _SETUPS_ORDER, cutoff, page[-1].id)
         if len(setups) > limit
+        else None,
+    }
+
+
+def _deployment_history_item(session: Session, deployment: Despliegue) -> dict[str, object]:
+    component_environment = session.get(ComponenteEntorno, deployment.componente_entorno_id)
+    assert component_environment is not None
+    environment = session.get(Entorno, component_environment.entorno_id)
+    assert environment is not None
+    event = session.get(RegistroIntegracion, deployment.registro_id)
+    assert event is not None
+    evidence = session.scalar(
+        select(DespliegueEvento).where(DespliegueEvento.registro_integracion_id == deployment.registro_id)
+    )
+    assert evidence is not None
+    person = session.get(Persona, deployment.ejecutado_por_persona_id) if deployment.ejecutado_por_persona_id else None
+    version = session.get(ComponenteVersion, deployment.componente_version_id)
+    assert version is not None
+    return {
+        "deployment_id": deployment.id,
+        "event_id": event.id_evento_origen,
+        "component_environment_id": component_environment.id,
+        "environment": environment.codigo,
+        "result": deployment.resultado,
+        "ticket_id": deployment.nro_ticket_invgate,
+        "tag": version.tag,
+        "commit_sha": deployment.commit_sha,
+        "result_summary": deployment.mensaje_resultado,
+        "actor": {
+            "person_id": person.id if person is not None else None,
+            "cuil": evidence.actor_cuil,
+            "username": deployment.ejecutado_por_texto,
+        },
+        "started_at": deployment.fecha_inicio.isoformat() if deployment.fecha_inicio is not None else None,
+        "finished_at": deployment.fecha_fin.isoformat(),
+    }
+
+
+def list_component_deployments(
+    session: Session,
+    *,
+    component_id: int,
+    environment: str | None,
+    limit: int,
+    cursor: str | None,
+    offset: str | None,
+) -> dict[str, object] | None:
+    if session.get(Componente, component_id) is None:
+        return None
+    environment_code = environment.upper() if environment is not None else None
+    if environment_code is not None and session.scalar(select(Entorno).where(Entorno.codigo == environment_code)) is None:
+        raise InvalidEnvironment()
+    statement = (
+        select(Despliegue)
+        .join(ComponenteEntorno, Despliegue.componente_entorno_id == ComponenteEntorno.id)
+        .where(ComponenteEntorno.componente_id == component_id)
+    )
+    if environment_code is not None:
+        statement = statement.join(Entorno, ComponenteEntorno.entorno_id == Entorno.id).where(Entorno.codigo == environment_code)
+    deployment_rows = statement.subquery()
+    filters = {"component_id": component_id, "environment": environment_code}
+    page_state = _history_page(
+        endpoint=_DEPLOYMENTS_ENDPOINT,
+        filters=filters,
+        order=_DEPLOYMENTS_ORDER,
+        cutoff=session.scalar(select(func.max(deployment_rows.c.id))) if cursor is None else None,
+        cursor=cursor,
+        limit=limit,
+        offset=offset,
+    )
+    if page_state is None:
+        return {"items": [], "next_cursor": None}
+    cutoff, anchor = page_state
+    deployments = list(
+        session.scalars(statement.where(Despliegue.id <= cutoff, Despliegue.id > anchor).order_by(Despliegue.id).limit(limit + 1))
+    )
+    page = deployments[:limit]
+    return {
+        "items": [_deployment_history_item(session, deployment) for deployment in page],
+        "next_cursor": _cursor_for_history(_DEPLOYMENTS_ENDPOINT, filters, _DEPLOYMENTS_ORDER, cutoff, page[-1].id)
+        if len(deployments) > limit
         else None,
     }
