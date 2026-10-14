@@ -1,28 +1,60 @@
-# Catalog API
+# API de Catálogo
 
-Catalog API is the central service for cataloguing organizational units, projects, components, environments, and deployment evidence. R1 setup acceptance is implemented; R2 and R3 remain proposed integrations.
+API central para registrar reparticiones, proyectos, componentes, entornos, accesos DevHub y evidencia de despliegues.
 
-## Current service
+## Estado actual
 
-- `GET /health` returns `200 OK` with `{"status":"ok"}` and does not require database configuration.
-- `POST /api/v1/setups` accepts validated R1 OpenShift setup events after the catalog schema and R1 migrations are applied. It persists setup evidence and one pending synchronization outbox record atomically, supports semantic same-event replay, and does not call InvGate or create deployment state.
+Los tres contratos de escritura están implementados, verificados y publicados:
 
-## Integration contract
+| Contrato | Endpoint | Propósito |
+| --- | --- | --- |
+| R1 · Setup OpenShift | `POST /api/v1/setups` | Crea o completa el registro inicial de proyecto, componente y entornos. |
+| R2 · Accesos DevHub | `POST /api/v1/devhub-accesses` | Registra accesos de autogestión y las personas autorizadas. |
+| R3 · Deployment OpenShift | `POST /api/v1/deployments` | Registra intentos de despliegue sobre componentes y entornos existentes. |
 
-The integration contract is versioned in this repository at [docs/contracts/contratos-integracion-catalogo.html](docs/contracts/contratos-integracion-catalogo.html). Its R1 setup contract is implemented by `POST /api/v1/setups`; R2 and R3 remain analysis proposals rather than active integrations.
+Además, `GET /health` responde `200 OK` con `{"status":"ok"}` y no requiere configuración de base de datos.
 
-- **R1 — OpenShift setup:** implemented as durable initial organizational, project, component, environment, setup-ticket, and pending-synchronization evidence.
-- **R2 — DevHub access:** proposes recording DevHub self-management access for authorized users of an organizational unit.
-- **R3 — OpenShift deployment:** proposes recording deployment attempts for existing components and environments, including deployment history and current state after success.
+## Comportamientos principales
 
-Refer to the detailed contract for R1 request and response shapes, idempotency, validation, privacy safeguards, and R2/R3 decisions that still require agreement.
+- Los tres endpoints aceptan reintentos semánticamente idénticos mediante `event_id`, sin duplicar registros.
+- R1 persiste evidencia de setup y una sincronización pendiente; no crea historial de despliegues.
+- R2 crea un acceso por evento, deduplica CUIL autorizados y no llama a InvGate ni genera outbox.
+- R3 registra historial de despliegues; sólo un resultado exitoso puede actualizar el estado vigente del componente y entorno.
+- R1 y R3 dejan una sincronización pendiente para el flujo posterior con InvGate. La integración remota con InvGate todavía no está implementada.
 
-## Configuration
+## Ejecutar localmente
 
-The application recognizes `CATALOGO_DATABASE_URL`.
+Los endpoints de escritura requieren una base de datos con el esquema legado disponible y las migraciones aplicadas.
 
-## Tests
+```bash
+cd /ruta/a/catalogo-api
+
+export CATALOGO_DATABASE_URL='mysql+pymysql://USUARIO:PASSWORD@HOST:PUERTO/BASE?charset=utf8mb4'
+
+PYTHONPATH=. .venv/bin/alembic upgrade head
+PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload
+```
+
+Con el servicio levantado:
+
+```bash
+curl -i http://127.0.0.1:8000/health
+```
+
+La documentación interactiva de FastAPI está disponible en [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+## Contrato de integración
+
+El contrato funcional de referencia está versionado en [docs/contracts/contratos-integracion-catalogo.html](docs/contracts/contratos-integracion-catalogo.html).
+
+El documento incluye también contratos futuros de sincronización con InvGate y consultas de lectura. Esos contratos no forman parte de la implementación actual.
+
+## Pruebas
+
+Ejecutar la suite completa:
 
 ```bash
 PYTHONPATH=. .venv/bin/python -m pytest -q
 ```
+
+Para pruebas manuales, usar una base no productiva. R1 debe ejecutarse antes de R3 si se utiliza el mismo componente y entorno; R2 es independiente.
