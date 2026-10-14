@@ -390,3 +390,75 @@ def test_deployments_history_filters_paginates_and_preserves_identity_and_outbox
             "deployments": session.scalar(select(func.count()).select_from(Despliegue)),
             "outbox": session.scalar(select(func.count()).select_from(SincronizacionOutbox)),
         } == {"deployments": before["deployments"] + 1, "outbox": before["outbox"] + 1}
+
+
+def test_history_routes_reject_invalid_pagination() -> None:
+    client, _engine = client_with_engine()
+
+    setup = create_setup(client, event_id="invalid-pagination-setup-1")
+    component_id = str(setup["component"]["component_id"])
+    with Session(_engine) as session:
+        event = RegistroIntegracion(
+            id_evento_origen="invalid-pagination-setup-2",
+            tipo_registro="R1_ALTA",
+            herramienta_origen="OCP",
+            nro_ticket_invgate="SET-43",
+            payload={},
+        )
+        session.add(event)
+        session.flush()
+        session.add(
+            SetupEvento(
+                registro_integracion=event,
+                hash_semantico="invalid-pagination-setup-2",
+                evidencia_canonica={"component_id": component_id},
+                actor_cuil="20987654321",
+            )
+        )
+        session.commit()
+    other_setup = create_setup(
+        client,
+        event_id="invalid-pagination-setup-other",
+        component_id="dgisis/catalog-web",
+        platform_project_id="invalid-pagination-other",
+    )
+    setup_route = f"/api/v1/components/{component_id}/setups"
+    setup_cursor = client.get(setup_route, params={"limit": 1}).json()["next_cursor"]
+
+    with Session(_engine) as session:
+        session.add(Persona(cuil="20123456789", usuario_ad="ocp-pipeline"))
+        session.commit()
+
+    deployment = valid_success_payload()
+    deployment["event_id"] = "invalid-pagination-deployment-1"
+    deployment["component"]["component_id"] = "dgisis/catalog-api"
+    deployment["finished_at"] = "2026-10-06T14:25:30Z"
+    assert client.post("/api/v1/deployments", json=deployment).status_code == 201
+    deployment["event_id"] = "invalid-pagination-deployment-2"
+    deployment["finished_at"] = "2026-10-06T14:26:30Z"
+    assert client.post("/api/v1/deployments", json=deployment).status_code == 201
+    deployments_route = f"/api/v1/components/{component_id}/deployments"
+    deployments_cursor = client.get(deployments_route, params={"limit": 1}).json()["next_cursor"]
+
+    create_devhub_access(client, event_id="invalid-pagination-devhub-1")
+    create_devhub_access(client, event_id="invalid-pagination-devhub-2")
+    devhub_route = "/api/v1/devhub-accesses"
+    devhub_params = {"repartition_route": "/JGM/DGISIS"}
+    devhub_cursor = client.get(devhub_route, params={**devhub_params, "limit": 1}).json()["next_cursor"]
+
+    cases = (
+        (devhub_route, devhub_params, devhub_cursor, devhub_route, {"repartition_route": "/JGM/OTHER"}),
+        (setup_route, {}, setup_cursor, f"/api/v1/components/{other_setup['component']['component_id']}/setups", {}),
+        (deployments_route, {}, deployments_cursor, deployments_route, {"environment": "DEV"}),
+    )
+    for route, params, cursor, cross_route, cross_filter in cases:
+        requests = (
+            client.get(route, params={**params, "limit": 201}),
+            client.get(route, params={**params, "offset": 1}),
+            client.get(route, params={**params, "cursor": "not-a-cursor"}),
+            client.get(cross_route, params={**params, **cross_filter, "cursor": cursor}),
+        )
+        assert cursor
+        for response in requests:
+            assert response.status_code == 400
+            assert response.json()["error"]["code"] == "invalid_pagination"
